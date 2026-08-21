@@ -75,6 +75,20 @@ export default defineSchema({
     budget: v.string(),
     timing: v.string(),
     notes: v.string(),
+    inspirationFiles: v.optional(
+      v.array(
+        v.object({
+          storageId: v.id("_storage"),
+          fileName: v.string(),
+          contentType: v.union(
+            v.literal("image/jpeg"),
+            v.literal("image/png"),
+            v.literal("image/webp"),
+          ),
+          size: v.number(),
+        }),
+      ),
+    ),
     consent: v.boolean(),
     createdAt: v.number(),
     status: v.literal("new"),

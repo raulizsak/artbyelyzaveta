@@ -20,13 +20,14 @@ export default function AboutPage() {
             paintings inspired by landscape, memory and quiet observation.
           </p>
         </div>
-        <div
-          className="portrait-placeholder"
-          role="img"
-          aria-label="Artist portrait placeholder"
-        >
-          <span>Artist portrait</span>
-          <small>Studio photography coming soon</small>
+        <div className="artist-portrait">
+          <Image
+            alt="Portrait of Elyzaveta in a leafy garden"
+            fill
+            priority
+            sizes="(max-width: 900px) 100vw, 42vw"
+            src="/artist/lisa-portrait.jpg"
+          />
         </div>
       </section>
       <section className="about-story shell">

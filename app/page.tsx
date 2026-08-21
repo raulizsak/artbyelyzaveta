@@ -10,11 +10,11 @@ export default function HomePage() {
     <main id="main-content">
       <section className="hero shell">
         <div className="hero__copy">
-          <p className="eyebrow">Original art · Melbourne, Australia</p>
-          <h1>Original paintings, created slowly and made to last.</h1>
+          <p className="eyebrow">Oil paintings · Melbourne, Australia</p>
+          <h1>Original oil paintings by a Ukrainian artist.</h1>
           <p className="hero__lede">
-            Original paintings inspired by atmosphere, landscape and the quiet
-            beauty of everyday places.
+            Moody landscapes painted in oil to bring calm, warmth and a sense of
+            place into your home.
           </p>
           <div className="button-row">
             <SmoothButton
@@ -69,7 +69,7 @@ export default function HomePage() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">One-of-one</p>
-            <h2>Available Original</h2>
+            <h2>Available Paintings</h2>
           </div>
           <Link className="text-link" href="/shop">
             Shop all <ArrowRight aria-hidden="true" size={16} />
@@ -104,10 +104,10 @@ export default function HomePage() {
       <section className="editorial-split shell">
         <div className="editorial-split__image">
           <Image
-            alt={painting.media[2].alt}
+            alt="Elyzaveta standing in a leafy garden"
             fill
             sizes="(max-width: 800px) 100vw, 48vw"
-            src={painting.media[2].src}
+            src="/artist/lisa-portrait.jpg"
           />
         </div>
         <div className="editorial-split__copy">
@@ -129,10 +129,42 @@ export default function HomePage() {
           <p className="eyebrow">Made for your story</p>
           <h2>Have a place or memory you would love painted?</h2>
         </div>
-        <div>
-          <p>
-            Begin with a considered, no-pressure enquiry. Share the feeling,
-            scale and setting you have in mind.
+        <div className="commission-banner__process">
+          <p className="eyebrow">How it works</p>
+          <ol>
+            <li>
+              <span>01</span>
+              <div>
+                <strong>Share your idea</strong>
+                <p>
+                  Tell Lisa about the place, memory, atmosphere or image you
+                  would like painted.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <strong>Receive a personal quote</strong>
+                <p>
+                  Size, complexity, timing and pricing are considered
+                  individually.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <strong>Approve &amp; begin</strong>
+                <p>
+                  If you would like to proceed, the commission is confirmed
+                  before work begins.
+                </p>
+              </div>
+            </li>
+          </ol>
+          <p className="commission-banner__prompt">
+            Begin with a considered, no-pressure enquiry.
           </p>
           <SmoothButton
             asChild
@@ -140,7 +172,9 @@ export default function HomePage() {
             size="lg"
             variant="outline"
           >
-            <Link href="/commissions">Explore commissions</Link>
+            <Link href="/commissions">
+              Explore Commission <ArrowRight aria-hidden="true" size={17} />
+            </Link>
           </SmoothButton>
         </div>
       </section>

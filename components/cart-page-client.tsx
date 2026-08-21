@@ -14,10 +14,7 @@ export function CartPageClient() {
       <div className="empty-state cart-empty">
         <p className="eyebrow">Your bag</p>
         <h1>Your bag is quiet.</h1>
-        <p>
-          Original works are one of one. Explore the collection and return when
-          one feels right.
-        </p>
+        <p>Explore the available original and return when one feels right.</p>
         {cart.removedItem ? (
           <button
             className="text-button"
@@ -33,7 +30,7 @@ export function CartPageClient() {
           size="lg"
           variant="solid"
         >
-          <Link href="/shop">Browse original paintings</Link>
+          <Link href="/shop">Browse the collection</Link>
         </SmoothButton>
       </div>
     );

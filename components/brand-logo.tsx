@@ -10,22 +10,33 @@ type BrandLogoProps = {
 };
 
 export function BrandLogo({ className, compact = false }: BrandLogoProps) {
-  const [animate, setAnimate] = useState(false);
+  const [animationRun, setAnimationRun] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(true);
 
   useEffect(() => {
-    const key = "art-by-elyzaveta-logo-seen";
-    if (!window.sessionStorage.getItem(key)) {
-      // Session storage is external state; this client-only flag intentionally hydrates after mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAnimate(true);
-      window.sessionStorage.setItem(key, "true");
-    }
-  }, []);
+    if (!isAnimating) return;
+    const timer = window.setTimeout(() => setIsAnimating(false), 1650);
+    return () => window.clearTimeout(timer);
+  }, [animationRun, isAnimating]);
+
+  const replay = () => {
+    if (
+      isAnimating ||
+      !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    )
+      return;
+    setAnimationRun((current) => current + 1);
+    setIsAnimating(true);
+  };
 
   return (
     <Link
       aria-label="Art by Elyzaveta — return home"
-      className={cn("brand-logo", animate && "brand-logo--animate", className)}
+      className={cn(
+        "brand-logo",
+        isAnimating && "brand-logo--animate",
+        className,
+      )}
       href="/"
       onClick={(event) => {
         if (window.location.pathname === "/") {
@@ -33,11 +44,13 @@ export function BrandLogo({ className, compact = false }: BrandLogoProps) {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       }}
+      onPointerEnter={replay}
     >
       <svg
         aria-hidden="true"
         className="brand-logo__mark"
         fill="none"
+        key={animationRun}
         viewBox="0 0 54 54"
       >
         <path
@@ -62,7 +75,7 @@ export function BrandLogo({ className, compact = false }: BrandLogoProps) {
           <path d="m34.2 43.2 1.3-2.2" />
         </g>
       </svg>
-      {!compact && (
+      {compact ? null : (
         <span className="brand-logo__wordmark">
           <span>Art by</span>
           <strong>Elyzaveta</strong>

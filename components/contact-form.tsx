@@ -2,51 +2,119 @@
 
 import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Send } from "lucide-react";
+import { CheckCircle2, CircleAlert, LoaderCircle, Send } from "lucide-react";
 import { api } from "@/convex/_generated/api";
+import { cn } from "@/lib/utils";
 
-const empty = {
+type ContactValues = {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  consent: boolean;
+};
+type RequiredField = "name" | "email" | "message" | "consent";
+type ErrorMap = Partial<Record<RequiredField, string>>;
+
+const empty: ContactValues = {
   name: "",
   email: "",
-  subject: "Artwork enquiry",
+  subject: "",
   message: "",
   consent: false,
 };
+const validate = (values: ContactValues): ErrorMap => {
+  const errors: ErrorMap = {};
+  if (!values.name.trim()) errors.name = "Please enter your full name.";
+  if (!/^\S+@\S+\.\S+$/.test(values.email))
+    errors.email = "Please enter a valid email address.";
+  if (!values.message.trim()) errors.message = "Please enter your message.";
+  if (!values.consent)
+    errors.consent =
+      "Please confirm that we can use these details to respond to your enquiry.";
+  return errors;
+};
+
 export function ContactForm() {
   const formRef = useRef<HTMLFormElement>(null);
+  const shakeTimerRef = useRef<number | null>(null);
   const submit = useMutation(api.enquiries.submitContact);
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState<ContactValues>(empty);
+  const [errors, setErrors] = useState<ErrorMap>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [shaking, setShaking] = useState<RequiredField[]>([]);
   const [state, setState] = useState<"idle" | "sending" | "success" | "error">(
     "idle",
   );
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+
   useEffect(() => {
     formRef.current?.setAttribute("data-ready", "true");
+    return () => {
+      if (shakeTimerRef.current) window.clearTimeout(shakeTimerRef.current);
+    };
   }, []);
+
+  const update = (key: keyof ContactValues, value: string | boolean) => {
+    const next = { ...form, [key]: value };
+    setForm(next);
+    if (submitted && key in errors) {
+      const nextErrors = validate(next);
+      setErrors((current) => {
+        if (nextErrors[key as RequiredField]) return current;
+        const updated = { ...current };
+        delete updated[key as RequiredField];
+        return updated;
+      });
+    }
+    if (state === "error") setState("idle");
+  };
+
+  const triggerErrors = (nextErrors: ErrorMap) => {
+    const fields = Object.keys(nextErrors) as RequiredField[];
+    setErrors(nextErrors);
+    setSubmitted(true);
+    setShaking(fields);
+    if (shakeTimerRef.current) window.clearTimeout(shakeTimerRef.current);
+    shakeTimerRef.current = window.setTimeout(() => setShaking([]), 330);
+    window.requestAnimationFrame(() => {
+      formRef.current
+        ?.querySelector<HTMLElement>(`[name="${fields[0]}"]`)
+        ?.focus();
+    });
+  };
+
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (
-      !form.name.trim() ||
-      !/^\S+@\S+\.\S+$/.test(form.email) ||
-      !form.message.trim() ||
-      !form.consent
-    ) {
-      setError("Please complete every required field and confirm consent.");
+    if (state === "sending") return;
+    const nextErrors = validate(form);
+    if (Object.keys(nextErrors).length) {
+      triggerErrors(nextErrors);
       return;
     }
+    setErrors({});
+    setFormError("");
     setState("sending");
-    setError("");
     try {
       await submit(form);
-      setState("success");
       setForm(empty);
+      setSubmitted(false);
+      setState("success");
     } catch {
       setState("error");
-      setError(
+      setFormError(
         "Your message could not be saved. Please try again or use the email address beside the form.",
       );
     }
   };
+
+  const errorMessage = (key: RequiredField) =>
+    errors[key] ? (
+      <small className="field-error" id={`contact-${key}-error`}>
+        <CircleAlert aria-hidden="true" size={14} /> {errors[key]}
+      </small>
+    ) : null;
+
   if (state === "success")
     return (
       <section className="form-success" aria-live="polite">
@@ -66,71 +134,126 @@ export function ContactForm() {
         </button>
       </section>
     );
+
   return (
     <form className="enquiry-form" noValidate onSubmit={onSubmit} ref={formRef}>
       <div className="form-grid two-col">
-        <label className="form-field">
+        <label
+          className={cn(
+            "form-field",
+            errors.name && "form-field--invalid",
+            shaking.includes("name") && "form-field--shake",
+          )}
+          htmlFor="contact-name"
+        >
           <span>Name *</span>
           <input
+            aria-describedby={errors.name ? "contact-name-error" : undefined}
+            aria-invalid={errors.name ? "true" : undefined}
             autoComplete="name"
-            onChange={(e) =>
-              setForm((current) => ({ ...current, name: e.target.value }))
-            }
+            id="contact-name"
+            name="name"
+            onChange={(event) => update("name", event.target.value)}
+            placeholder="Full name"
             value={form.name}
           />
+          {errorMessage("name")}
         </label>
-        <label className="form-field">
+        <label
+          className={cn(
+            "form-field",
+            errors.email && "form-field--invalid",
+            shaking.includes("email") && "form-field--shake",
+          )}
+          htmlFor="contact-email"
+        >
           <span>Email *</span>
           <input
+            aria-describedby={errors.email ? "contact-email-error" : undefined}
+            aria-invalid={errors.email ? "true" : undefined}
             autoComplete="email"
-            onChange={(e) =>
-              setForm((current) => ({ ...current, email: e.target.value }))
-            }
+            id="contact-email"
+            name="email"
+            onChange={(event) => update("email", event.target.value)}
+            placeholder="name@example.com"
             type="email"
             value={form.email}
           />
+          {errorMessage("email")}
         </label>
-        <label className="form-field form-field--wide">
+        <label
+          className="form-field form-field--wide"
+          htmlFor="contact-subject"
+        >
           <span>Subject</span>
           <select
-            onChange={(e) =>
-              setForm((current) => ({ ...current, subject: e.target.value }))
-            }
+            className={!form.subject ? "select-placeholder" : undefined}
+            id="contact-subject"
+            name="subject"
+            onChange={(event) => update("subject", event.target.value)}
             value={form.subject}
           >
-            <option>Artwork enquiry</option>
-            <option>Delivery question</option>
-            <option>Commission enquiry</option>
+            <option value="">Choose a subject</option>
+            <option>Available painting</option>
+            <option>Shipping or delivery</option>
+            <option>Commission</option>
             <option>General enquiry</option>
+            <option>Other</option>
           </select>
         </label>
-        <label className="form-field form-field--wide">
+        <label
+          className={cn(
+            "form-field form-field--wide",
+            errors.message && "form-field--invalid",
+            shaking.includes("message") && "form-field--shake",
+          )}
+          htmlFor="contact-message"
+        >
           <span>Message *</span>
           <textarea
-            onChange={(e) =>
-              setForm((current) => ({ ...current, message: e.target.value }))
+            aria-describedby={
+              errors.message ? "contact-message-error" : undefined
             }
+            aria-invalid={errors.message ? "true" : undefined}
+            id="contact-message"
+            name="message"
+            onChange={(event) => update("message", event.target.value)}
+            placeholder="How can we help?"
             rows={7}
             value={form.message}
           />
+          {errorMessage("message")}
         </label>
-        <label className="consent-field form-field--wide">
-          <input
-            checked={form.consent}
-            onChange={(e) =>
-              setForm((current) => ({ ...current, consent: e.target.checked }))
-            }
-            type="checkbox"
-          />
-          <span>
-            I consent to Art by Elyzaveta using these details to respond to my
-            enquiry. *
-          </span>
-        </label>
+        <div
+          className={cn(
+            "consent-group form-field--wide",
+            errors.consent && "form-field--invalid",
+            shaking.includes("consent") && "form-field--shake",
+          )}
+        >
+          <label className="consent-field" htmlFor="contact-consent">
+            <input
+              aria-describedby={
+                errors.consent ? "contact-consent-error" : undefined
+              }
+              aria-invalid={errors.consent ? "true" : undefined}
+              checked={form.consent}
+              id="contact-consent"
+              name="consent"
+              onChange={(event) => update("consent", event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              I consent to Art by Elyzaveta using these details to respond to my
+              enquiry. *
+            </span>
+          </label>
+          {errorMessage("consent")}
+        </div>
       </div>
-      {error ? (
+      {formError ? (
         <p className="form-error" role="alert">
-          {error}
+          {formError}
         </p>
       ) : null}
       <button
@@ -138,8 +261,16 @@ export function ContactForm() {
         disabled={state === "sending"}
         type="submit"
       >
-        <Send aria-hidden="true" size={17} />{" "}
-        {state === "sending" ? "Saving…" : "Send enquiry"}
+        {state === "sending" ? (
+          <LoaderCircle
+            aria-hidden="true"
+            className="upload-spinner"
+            size={17}
+          />
+        ) : (
+          <Send aria-hidden="true" size={17} />
+        )}
+        {state === "sending" ? "Sending enquiry…" : "Send enquiry"}
       </button>
     </form>
   );

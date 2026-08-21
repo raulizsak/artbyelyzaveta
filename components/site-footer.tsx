@@ -17,7 +17,7 @@ export function SiteFooter() {
       <div className="shell site-footer__grid">
         <div>
           <BrandLogo />
-          <p>Original paintings, created slowly and made to last.</p>
+          <p>Original oil paintings by Elyzaveta.</p>
           <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         </div>
         <nav aria-label="Footer navigation">
