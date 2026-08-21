@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import AnimatedStepper from "@/components/smoothui/animated-stepper";
 import { useCart } from "@/components/cart-provider";
@@ -36,6 +36,7 @@ const initial: Details = {
 };
 
 export function CheckoutClient() {
+  const checkoutRef = useRef<HTMLElement>(null);
   const cart = useCart();
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -50,6 +51,10 @@ export function CheckoutClient() {
     // Session storage restores an intentionally browser-local demonstration checkout.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) setDetails(JSON.parse(stored) as Details);
+    const frame = window.requestAnimationFrame(() => {
+      checkoutRef.current?.setAttribute("data-checkout-ready", "true");
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
   useEffect(() => {
     window.sessionStorage.setItem(
@@ -158,7 +163,7 @@ export function CheckoutClient() {
         ]}
       />
       <div className="checkout-layout">
-        <section className="checkout-form" aria-live="polite">
+        <section aria-live="polite" className="checkout-form" ref={checkoutRef}>
           {step === 0 ? (
             <>
               <div className="form-heading">

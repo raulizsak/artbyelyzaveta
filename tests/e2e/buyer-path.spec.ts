@@ -34,6 +34,7 @@ test("buyer can browse, use a duplicate-safe bag and complete the payment-free d
   ).toBeVisible();
   await page.getByRole("button", { name: "Undo removal" }).click();
   await page.getByRole("link", { name: "Continue to demo checkout" }).click();
+  await page.locator('[data-checkout-ready="true"]').waitFor();
 
   await expect(
     page.locator(
