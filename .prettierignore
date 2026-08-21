@@ -1,0 +1,8 @@
+.agents/skills/
+.claude/skills/
+convex/_generated/
+example/convex/_generated/
+.convex/
+playwright-report/
+test-results/
+blob-report/
