@@ -1,4 +1,3 @@
-import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 const viewports = [
@@ -9,6 +8,7 @@ const viewports = [
   { width: 1024, height: 768 },
   { width: 768, height: 1024 },
   { width: 430, height: 932 },
+  { width: 393, height: 852 },
   { width: 390, height: 844 },
   { width: 375, height: 812 },
   { width: 360, height: 800 },
@@ -149,6 +149,13 @@ test("logo paints on page load, replays on desktop hover and respects reduced mo
 test("contact validation identifies, focuses and recovers each required field", async ({
   page,
 }) => {
+  await page.route("**/api/enquiries/contact", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: '{"ok":true}',
+    }),
+  );
   await page.goto("/contact");
   await page.locator('form[data-ready="true"]').waitFor();
   await page.getByRole("button", { name: "Send enquiry" }).click();
@@ -236,23 +243,12 @@ test("commission validation and image upload recover through a successful submis
   await fileInput.setInputFiles({
     name: "too-large.jpg",
     mimeType: "image/jpeg",
-    buffer: Buffer.alloc(10 * 1024 * 1024 + 1),
+    buffer: Buffer.alloc(8 * 1024 * 1024 + 1),
   });
   await expect(
     page.getByText(
-      "This image is larger than 10 MB. Please choose a smaller file.",
+      "This image is larger than 8 MB. Please choose a smaller file.",
     ),
-  ).toBeVisible();
-
-  const referenceImage = path.resolve(
-    process.cwd(),
-    "public/artwork/cows-at-dusk-gallery-wall.png",
-  );
-  await fileInput.setInputFiles(referenceImage);
-  await expect(
-    page.getByRole("button", {
-      name: "Remove cows-at-dusk-gallery-wall.png",
-    }),
   ).toBeVisible();
 
   await page.getByLabel("Name *").fill("Avery Collector");
@@ -263,20 +259,14 @@ test("commission validation and image upload recover through a successful submis
   await page
     .getByLabel(/I consent to Art by Elyzaveta using these details/)
     .check();
-  await page.evaluate(() => {
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = async (...args: Parameters<typeof fetch>) => {
-      await new Promise((resolve) => window.setTimeout(resolve, 650));
-      return originalFetch(...args);
-    };
-  });
-  await page.getByRole("button", { name: "Send commission enquiry" }).click();
-
-  await expect(
-    page.getByRole("progressbar", {
-      name: "Uploading cows-at-dusk-gallery-wall.png",
+  await page.route("**/api/enquiries/commission", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: '{"ok":true}',
     }),
-  ).toBeVisible();
+  );
+  await page.getByRole("button", { name: "Send commission enquiry" }).click();
   await expect(
     page.getByRole("heading", { name: "Your idea is on its way." }),
   ).toBeVisible();

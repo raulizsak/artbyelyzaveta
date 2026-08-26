@@ -2,10 +2,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Brush, Frame, ShieldCheck } from "lucide-react";
 import SmoothButton from "@/components/ui/smoothui/smooth-button";
-import { COWS_AT_DUSK, formatMoney, paintingDimensions } from "@/lib/catalog";
+import { formatMoney, paintingDimensions } from "@/lib/catalog";
+import { getFeaturedPainting } from "@/lib/catalog-data";
 
-export default function HomePage() {
-  const painting = COWS_AT_DUSK;
+export default async function HomePage() {
+  const painting = await getFeaturedPainting();
+  if (!painting) {
+    return (
+      <main className="page-shell shell" id="main-content">
+        <header className="page-intro">
+          <p className="eyebrow">Oil paintings · Melbourne, Australia</p>
+          <h1>Original oil paintings by a Ukrainian artist.</h1>
+          <p>New original works are being prepared for the collection.</p>
+        </header>
+      </main>
+    );
+  }
+  const roomImage =
+    painting.media.find((item) => item.kind === "room") ?? painting.media[0];
   return (
     <main id="main-content">
       <section className="hero shell">
@@ -40,7 +54,7 @@ export default function HomePage() {
             <Image
               alt={painting.media[0].alt}
               height={1080}
-              priority
+              loading="eager"
               sizes="(max-width: 800px) 94vw, 56vw"
               src={painting.media[0].src}
               width={1080}
@@ -48,7 +62,7 @@ export default function HomePage() {
           </div>
           <p>
             <em>{painting.title}</em> · {painting.medium} on{" "}
-            {painting.surface.toLowerCase()}
+            {painting.surface?.toLowerCase() ?? "artist surface"}
           </p>
         </div>
       </section>
@@ -77,11 +91,12 @@ export default function HomePage() {
         </div>
         <div className="featured__grid">
           <Image
-            alt={painting.media[1].alt}
+            alt={roomImage.alt}
             className="featured__image"
             height={1402}
+            loading="eager"
             sizes="(max-width: 800px) 100vw, 58vw"
-            src={painting.media[1].src}
+            src={roomImage.src}
             width={1122}
           />
           <div className="featured__details">
@@ -91,9 +106,12 @@ export default function HomePage() {
             <h3>{painting.title}</h3>
             <p>{paintingDimensions(painting)}</p>
             <p>
-              {painting.medium} on {painting.surface.toLowerCase()}
+              {painting.medium ?? "Original artwork"}
+              {painting.surface ? ` on ${painting.surface.toLowerCase()}` : ""}
             </p>
-            <strong>{formatMoney(painting.price)}</strong>
+            <strong>
+              {formatMoney(painting.priceCents, painting.currency)}
+            </strong>
             <Link className="view-painting" href={`/shop/${painting.slug}`}>
               View Painting <ArrowRight aria-hidden="true" size={18} />
             </Link>
@@ -107,7 +125,7 @@ export default function HomePage() {
             alt="Elyzaveta standing in a leafy garden"
             fill
             sizes="(max-width: 800px) 100vw, 48vw"
-            src="/artist/lisa-portrait.jpg"
+            src="/optimized/artist/lisa-portrait-main.webp"
           />
         </div>
         <div className="editorial-split__copy">

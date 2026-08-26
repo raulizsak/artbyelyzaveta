@@ -2,13 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import AnimatedStepper from "@/components/smoothui/animated-stepper";
 import { useCart } from "@/components/cart-provider";
 import { PaymentPanel } from "@/components/payment-panel";
-import { COWS_AT_DUSK, formatMoney } from "@/lib/catalog";
+import { formatMoney, paintingDimensions } from "@/lib/catalog";
 
 type Details = {
   firstName: string;
@@ -35,12 +33,17 @@ const initial: Details = {
   notes: "",
 };
 
-export function CheckoutClient() {
+export function CheckoutClient({
+  checkoutEnabled,
+  initialDetails,
+}: {
+  checkoutEnabled: boolean;
+  initialDetails?: Partial<Details>;
+}) {
   const checkoutRef = useRef<HTMLElement>(null);
   const cart = useCart();
-  const router = useRouter();
   const [step, setStep] = useState(0);
-  const [details, setDetails] = useState(initial);
+  const [details, setDetails] = useState({ ...initial, ...initialDetails });
   const [delivery, setDelivery] = useState<"shipping" | "collection">(
     "shipping",
   );
@@ -48,9 +51,14 @@ export function CheckoutClient() {
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem("art-by-elyzaveta-checkout");
-    // Session storage restores an intentionally browser-local demonstration checkout.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (stored) setDetails(JSON.parse(stored) as Details);
+    if (stored) {
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDetails(JSON.parse(stored) as Details);
+      } catch {
+        window.sessionStorage.removeItem("art-by-elyzaveta-checkout");
+      }
+    }
     const frame = window.requestAnimationFrame(() => {
       checkoutRef.current?.setAttribute("data-checkout-ready", "true");
     });
@@ -93,24 +101,6 @@ export function CheckoutClient() {
     setStep((current) => Math.min(2, current + 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const complete = () => {
-    const reference = `ABE-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    window.sessionStorage.setItem(
-      "art-by-elyzaveta-demo-order",
-      JSON.stringify({
-        reference,
-        firstName: details.firstName,
-        email: details.email,
-        delivery,
-        title: COWS_AT_DUSK.title,
-        total: cart.subtotal || COWS_AT_DUSK.price,
-      }),
-    );
-    window.sessionStorage.removeItem("art-by-elyzaveta-checkout");
-    cart.clear();
-    toast.success("Demo order created");
-    router.push(`/order-confirmation?reference=${reference}`);
-  };
   const field = (
     name: keyof Details,
     label: string,
@@ -132,10 +122,11 @@ export function CheckoutClient() {
     </label>
   );
 
-  if (!cart.count && step < 2)
+  const item = cart.items[0];
+  if (!item)
     return (
       <div className="empty-state checkout-empty">
-        <p className="eyebrow">Demo checkout</p>
+        <p className="eyebrow">Checkout</p>
         <h1>Your bag is empty.</h1>
         <p>Add the available original before entering the checkout.</p>
         <Link className="cta-link" href="/shop">
@@ -148,10 +139,10 @@ export function CheckoutClient() {
     <>
       <header className="checkout-header">
         <div>
-          <p className="eyebrow">Payment-free demonstration</p>
+          <p className="eyebrow">Stripe TEST MODE</p>
           <h1>Checkout</h1>
         </div>
-        <p>No card details will be requested.</p>
+        <p>Test cards only. Live payments remain disabled.</p>
       </header>
       <AnimatedStepper
         className="checkout-stepper"
@@ -159,7 +150,7 @@ export function CheckoutClient() {
         steps={[
           { label: "Your details", description: "Contact" },
           { label: "Delivery", description: "Arrangement" },
-          { label: "Review", description: "Demo confirmation" },
+          { label: "Review", description: "Payment" },
         ]}
       />
       <div className="checkout-layout">
@@ -170,7 +161,7 @@ export function CheckoutClient() {
                 <span>01</span>
                 <div>
                   <h2>Your details</h2>
-                  <p>Used only to demonstrate the checkout flow.</p>
+                  <p>Used for your order and delivery communication.</p>
                 </div>
               </div>
               <div className="form-grid two-col">
@@ -245,7 +236,8 @@ export function CheckoutClient() {
                 <div>
                   <h2>Review</h2>
                   <p>
-                    Check your details, then create a local demo confirmation.
+                    Check your details before opening Stripe&apos;s secure
+                    payment form.
                   </p>
                 </div>
               </div>
@@ -292,9 +284,10 @@ export function CheckoutClient() {
                 </div>
               </div>
               <PaymentPanel
-                amount={cart.subtotal || COWS_AT_DUSK.price}
-                currency="AUD"
-                onComplete={complete}
+                amount={cart.subtotal}
+                currency={item.currency}
+                enabled={checkoutEnabled}
+                request={{ paintingId: item.id, ...details, delivery }}
               />
             </>
           ) : null}
@@ -326,20 +319,23 @@ export function CheckoutClient() {
         <aside className="checkout-summary">
           <p className="eyebrow">One original</p>
           <Image
-            alt={COWS_AT_DUSK.media[0].alt}
+            alt={item.image.alt}
             height={180}
-            src={COWS_AT_DUSK.media[0].src}
+            src={item.image.src}
             width={180}
           />
           <div>
-            <h2>{COWS_AT_DUSK.title}</h2>
-            <p>Oil on canvas · 90 × 60 cm</p>
-            <strong>{formatMoney(COWS_AT_DUSK.price)}</strong>
+            <h2>{item.title}</h2>
+            <p>
+              {[item.medium, item.surface].filter(Boolean).join(" on ")} ·{" "}
+              {paintingDimensions(item)}
+            </p>
+            <strong>{formatMoney(item.priceCents, item.currency)}</strong>
           </div>
           <hr />
           <p className="checkout-summary__total">
-            <span>Demo total</span>
-            <strong>{formatMoney(COWS_AT_DUSK.price)}</strong>
+            <span>Total</span>
+            <strong>{formatMoney(cart.subtotal, item.currency)}</strong>
           </p>
         </aside>
       </div>

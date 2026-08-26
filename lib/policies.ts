@@ -448,7 +448,7 @@ These may include providers of:
 * shipping and courier services;
 * accounting or professional services.
 
-For example, our technical infrastructure may use services such as Render and Convex, and future payments may use Stripe.
+For example, our technical infrastructure uses Render for website hosting, Supabase for database, authentication and file storage, Stripe for payment processing, and SMTP2GO for transactional email delivery.
 
 We disclose information to service providers only where reasonably necessary for the relevant service or another lawful purpose.
 

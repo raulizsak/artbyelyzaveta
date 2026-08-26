@@ -16,25 +16,30 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { COWS_AT_DUSK, formatMoney, paintingDimensions } from "@/lib/catalog";
+import {
+  availabilityLabel,
+  formatMoney,
+  paintingDimensions,
+  toCartPainting,
+} from "@/lib/catalog";
+import { getPaintingBySlug } from "@/lib/catalog-data";
 
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  if (slug !== COWS_AT_DUSK.slug) return {};
+  const painting = await getPaintingBySlug(slug);
+  if (!painting) return {};
   return {
-    title: "Cows at Dusk — Original Oil Painting",
-    description: COWS_AT_DUSK.seoDescription,
+    title: painting.seoTitle ?? `${painting.title} — Original Painting`,
+    description: painting.seoDescription ?? painting.description,
   };
-}
-export function generateStaticParams() {
-  return [{ slug: COWS_AT_DUSK.slug }];
 }
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  if (slug !== COWS_AT_DUSK.slug) notFound();
-  const painting = COWS_AT_DUSK;
+  const painting = await getPaintingBySlug(slug);
+  if (!painting) notFound();
+  const cartPainting = toCartPainting(painting);
   return (
     <main id="main-content">
       <div className="product-breadcrumb shell">
@@ -43,20 +48,25 @@ export default async function ProductPage({ params }: Props) {
         <span>{painting.title}</span>
       </div>
       <section className="product-layout shell">
-        <ProductGallery />
+        <ProductGallery painting={painting} />
         <aside className="product-info">
           <p className="eyebrow">Original oil painting</p>
           <h1>{painting.title}</h1>
-          <p className="product-info__price">{formatMoney(painting.price)}</p>
+          <p className="product-info__price">
+            {formatMoney(painting.priceCents, painting.currency)}
+          </p>
           <span className="availability">
-            <i /> Available · One of one
+            <i /> {availabilityLabel(painting.status)}
           </span>
           <p className="product-info__description">{painting.description}</p>
           <dl className="spec-list">
             <div>
               <dt>Medium</dt>
               <dd>
-                {painting.medium} on {painting.surface.toLowerCase()}
+                {painting.medium ?? "Original artwork"}
+                {painting.surface
+                  ? ` on ${painting.surface.toLowerCase()}`
+                  : ""}
               </dd>
             </div>
             <div>
@@ -65,24 +75,35 @@ export default async function ProductPage({ params }: Props) {
             </div>
             <div>
               <dt>Framing</dt>
-              <dd>{painting.frameDescription}</dd>
+              <dd>
+                {painting.frameDescription ??
+                  (painting.framed ? "Framed" : "Unframed")}
+              </dd>
             </div>
             <div>
               <dt>Hanging</dt>
-              <dd>Ready to hang</dd>
+              <dd>
+                {painting.readyToHang
+                  ? "Ready to hang"
+                  : "Hanging arrangement required"}
+              </dd>
             </div>
             <div>
               <dt>Authenticity</dt>
-              <dd>Certificate included</dd>
+              <dd>
+                {painting.certificate
+                  ? "Certificate included"
+                  : "Contact the artist"}
+              </dd>
             </div>
           </dl>
           <div className="product-actions">
-            <AddToCart />
-            <AddToCart buyNow />
+            <AddToCart painting={cartPainting} />
+            <AddToCart buyNow painting={cartPainting} />
           </div>
           <p className="demo-note">
-            <LockKeyhole aria-hidden="true" size={15} /> Demo checkout only — no
-            payment details are requested or processed.
+            <LockKeyhole aria-hidden="true" size={15} /> Payments remain in
+            Stripe test mode until the separate production go-live approval.
           </p>
           <div className="assurance-list">
             <span>
@@ -107,8 +128,7 @@ export default async function ProductPage({ params }: Props) {
               <AccordionContent>
                 <p>
                   Shipping or Melbourne collection arrangements are confirmed
-                  with you before any real purchase. See the shipping policy for
-                  details.
+                  personally. Shipping is not silently estimated or added.
                 </p>
               </AccordionContent>
             </AccordionItem>

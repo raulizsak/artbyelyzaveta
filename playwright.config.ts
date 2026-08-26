@@ -14,18 +14,10 @@ export default defineConfig({
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile-chromium", use: { ...devices["iPhone 13"] } },
   ],
-  webServer: [
-    {
-      command: "npm run dev:convex",
-      url: "http://127.0.0.1:3210",
-      reuseExistingServer: true,
-      timeout: 120_000,
-    },
-    {
-      command: "npm run dev:next",
-      url: "http://127.0.0.1:3000",
-      reuseExistingServer: true,
-      timeout: 120_000,
-    },
-  ],
+  webServer: {
+    command: "npm run dev:next",
+    url: "http://127.0.0.1:3000",
+    reuseExistingServer: true,
+    timeout: 120_000,
+  },
 });

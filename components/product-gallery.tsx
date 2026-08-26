@@ -2,16 +2,22 @@
 
 import Image from "next/image";
 import { Expand, Sofa } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import BasicModal from "@/components/smoothui/basic-modal";
-import { COWS_AT_DUSK } from "@/lib/catalog";
+import type { Painting } from "@/lib/catalog";
 
-export function ProductGallery() {
+export function ProductGallery({ painting }: { painting: Painting }) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [roomPreview, setRoomPreview] = useState(false);
-  const media = COWS_AT_DUSK.media;
+  const [roomIndex, setRoomIndex] = useState(0);
+  const media = painting.media;
   const current = media[active];
+  const rooms = useMemo(
+    () => media.filter((item) => item.kind === "room"),
+    [media],
+  );
+  const currentRoom = rooms[roomIndex] ?? null;
 
   return (
     <div className="product-gallery">
@@ -23,8 +29,9 @@ export function ProductGallery() {
         >
           <Image
             alt={current.alt}
+            fetchPriority="high"
             height={current.height}
-            priority
+            loading="eager"
             sizes="(max-width: 900px) 100vw, 58vw"
             src={current.src}
             width={current.width}
@@ -43,7 +50,7 @@ export function ProductGallery() {
             onClick={() => setActive(index)}
             type="button"
           >
-            <Image alt="" height={110} src={image.src} width={110} />
+            <Image alt="" height={110} src={image.thumbnailSrc} width={110} />
           </button>
         ))}
       </div>
@@ -59,14 +66,14 @@ export function ProductGallery() {
         isOpen={lightbox}
         onClose={() => setLightbox(false)}
         size="full"
-        title={`${COWS_AT_DUSK.title} — view ${active + 1}`}
+        title={`${painting.title} — view ${active + 1}`}
       >
         <div className="lightbox-image">
           <Image
             alt={current.alt}
             height={current.height}
             sizes="90vw"
-            src={current.src}
+            src={current.largeSrc}
             width={current.width}
           />
         </div>
@@ -82,20 +89,35 @@ export function ProductGallery() {
           Choose a setting to understand the painting’s landscape proportions.
           Room images are an indicative preview.
         </p>
-        <div className="room-preview-grid">
-          {media
-            .filter((item) => item.kind === "room")
-            .map((image) => (
-              <Image
-                alt={image.alt}
-                height={image.height}
-                key={image.src}
-                sizes="(max-width: 700px) 90vw, 40vw"
-                src={image.src}
-                width={image.width}
-              />
-            ))}
-        </div>
+        {currentRoom ? (
+          <div className="room-preview-single">
+            <Image
+              alt={currentRoom.alt}
+              height={currentRoom.height}
+              key={currentRoom.id}
+              sizes="(max-width: 700px) 90vw, 70vw"
+              src={currentRoom.largeSrc}
+              width={currentRoom.width}
+            />
+            <div
+              aria-label="Choose a room setting"
+              className="room-preview-choices"
+            >
+              {rooms.map((image, index) => (
+                <button
+                  aria-pressed={index === roomIndex}
+                  key={image.id}
+                  onClick={() => setRoomIndex(index)}
+                  type="button"
+                >
+                  Room {index + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p>No room previews are available for this painting yet.</p>
+        )}
       </BasicModal>
     </div>
   );

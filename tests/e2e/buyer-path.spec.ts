@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("buyer can browse, use a duplicate-safe bag and complete the payment-free demo", async ({
+test("buyer can browse, use a duplicate-safe bag and reach safe test checkout", async ({
   page,
 }) => {
   await page.goto("/shop");
@@ -33,7 +33,7 @@ test("buyer can browse, use a duplicate-safe bag and complete the payment-free d
     page.getByRole("heading", { name: "Your bag is quiet." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Undo removal" }).click();
-  await page.getByRole("link", { name: "Continue to demo checkout" }).click();
+  await page.getByRole("link", { name: /Continue to checkout/ }).click();
   await page.locator('[data-checkout-ready="true"]').waitFor();
 
   await expect(
@@ -52,14 +52,12 @@ test("buyer can browse, use a duplicate-safe bag and complete the payment-free d
   await page.getByLabel("Postcode").fill("3000");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
-    page.getByRole("heading", { name: "No payment is collected" }),
+    page.getByRole("heading", { name: "Secure card payment" }),
   ).toBeVisible();
   await expect(page.locator('input[autocomplete^="cc-"]')).toHaveCount(0);
-  await page.getByRole("button", { name: "Place demo order" }).click();
   await expect(
-    page.getByRole("heading", { name: "Thank you, Avery." }),
+    page.getByText(/Test checkout is safely disabled/),
   ).toBeVisible();
-  await expect(page.getByText("no payment has been taken")).toBeVisible();
 });
 
 test("room preview and lightbox are keyboard dismissible", async ({ page }) => {
@@ -76,9 +74,75 @@ test("room preview and lightbox are keyboard dismissible", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 
+test("mobile gallery survives rapid repeated thumbnail changes and navigation", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile-chromium",
+    "This is the dedicated mobile gallery regression.",
+  );
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/shop/cows-at-dusk");
+  const buttons = page.getByRole("button", { name: /^Show view \d+$/ });
+  await expect(buttons).toHaveCount(5);
+  const mainImage = page.locator(".product-gallery__main img");
+
+  async function tapRapidly(finalIndex: number) {
+    await buttons.first().evaluate((firstButton, targetIndex) => {
+      const gallery = firstButton.closest(".product-gallery");
+      const controls = [
+        ...gallery!.querySelectorAll<HTMLButtonElement>(
+          '[aria-label^="Show view"]',
+        ),
+      ];
+      for (let index = 0; index < 20; index += 1)
+        controls[index % controls.length].click();
+      controls[targetIndex].click();
+    }, finalIndex);
+    await expect(buttons.nth(finalIndex)).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    const thumbnailSource = await buttons
+      .nth(finalIndex)
+      .locator("img")
+      .getAttribute("src");
+    await expect(mainImage).toHaveAttribute(
+      "src",
+      thumbnailSource!.replace("-thumbnail.webp", "-main.webp"),
+    );
+  }
+
+  await tapRapidly(4);
+  await tapRapidly(2);
+  await page.goto("/shop");
+  await page.goBack();
+  await expect(buttons).toHaveCount(5);
+  await page.goForward();
+  await expect(
+    page.getByRole("heading", { name: "Original Paintings" }),
+  ).toBeVisible();
+  await page.goBack();
+  await tapRapidly(1);
+});
+
 test("contact and commission enquiries are validated and saved", async ({
   page,
 }) => {
+  await page.route("**/api/enquiries/contact", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: '{"ok":true}',
+    }),
+  );
+  await page.route("**/api/enquiries/commission", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: '{"ok":true}',
+    }),
+  );
   await page.goto("/contact");
   await page.locator('form[data-ready="true"]').waitFor();
   await page.getByLabel("Email *").fill("avery@example.com");

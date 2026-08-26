@@ -4,18 +4,26 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { useCart } from "@/components/cart-provider";
 import SmoothButton from "@/components/ui/smoothui/smooth-button";
-import { COWS_AT_DUSK } from "@/lib/catalog";
+import type { CartPainting } from "@/lib/catalog";
 
-export function AddToCart({ buyNow = false }: { buyNow?: boolean }) {
+export function AddToCart({
+  painting,
+  buyNow = false,
+}: {
+  painting: CartPainting;
+  buyNow?: boolean;
+}) {
   const cart = useCart();
   const router = useRouter();
-  const inCart = cart.items.some((item) => item.slug === COWS_AT_DUSK.slug);
+  const inCart = cart.items.some((item) => item.slug === painting.slug);
+  const unavailable = painting.status !== "available";
 
   return (
     <SmoothButton
       className="cta cta--primary product-action"
+      disabled={unavailable}
       onClick={() => {
-        cart.add(COWS_AT_DUSK);
+        cart.add(painting);
         if (buyNow) {
           cart.setCartOpen(false);
           router.push("/checkout");
@@ -25,12 +33,14 @@ export function AddToCart({ buyNow = false }: { buyNow?: boolean }) {
       type="button"
       variant="solid"
     >
-      {inCart && !buyNow ? (
+      {unavailable ? (
+        "Original unavailable"
+      ) : inCart && !buyNow ? (
         <>
           <Check aria-hidden="true" size={17} /> Added to bag
         </>
       ) : buyNow ? (
-        "Buy original — demo"
+        "Buy original"
       ) : (
         "Add original to bag"
       )}

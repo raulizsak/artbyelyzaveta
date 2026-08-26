@@ -24,14 +24,21 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  robots: { index: false, follow: false },
+  robots:
+    process.env.ENABLE_SEARCH_INDEXING === "true"
+      ? { index: true, follow: true }
+      : { index: false, follow: false },
   openGraph: {
     title: `${SITE_NAME} | Original Paintings`,
     description: SITE_DESCRIPTION,
     locale: "en_AU",
     type: "website",
     images: [
-      { url: "/artwork/cows-at-dusk-warm-room.png", width: 1122, height: 1402 },
+      {
+        url: "/optimized/artwork/cows-at-dusk-warm-room-main.webp",
+        width: 1122,
+        height: 1402,
+      },
     ],
   },
 };

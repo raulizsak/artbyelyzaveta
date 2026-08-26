@@ -2,17 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import {
-  COWS_AT_DUSK,
+  availabilityLabel,
   formatMoney,
   paintingDimensions,
   type Painting,
 } from "@/lib/catalog";
 
-export function PaintingCard({
-  painting = COWS_AT_DUSK,
-}: {
-  painting?: Painting;
-}) {
+export function PaintingCard({ painting }: { painting: Painting }) {
   return (
     <article className="painting-card">
       <Link
@@ -27,11 +23,13 @@ export function PaintingCard({
           src={painting.media[0].src}
           width={1080}
         />
-        <span className="status-pill">Available</span>
+        <span className="status-pill">
+          {availabilityLabel(painting.status)}
+        </span>
       </Link>
       <div className="painting-card__content">
         <div>
-          <p>{painting.category} · Original</p>
+          <p>{painting.category ?? "Original"} · Original</p>
           <h2>
             <Link href={`/shop/${painting.slug}`}>{painting.title}</Link>
           </h2>
@@ -39,8 +37,12 @@ export function PaintingCard({
         <ArrowUpRight aria-hidden="true" size={22} strokeWidth={1.4} />
       </div>
       <div className="painting-card__meta">
-        <span>{paintingDimensions(painting)} · Oil on canvas</span>
-        <strong>{formatMoney(painting.price)}</strong>
+        <span>
+          {paintingDimensions(painting)} ·{" "}
+          {painting.medium ?? "Original artwork"}
+          {painting.surface ? ` on ${painting.surface.toLowerCase()}` : ""}
+        </span>
+        <strong>{formatMoney(painting.priceCents, painting.currency)}</strong>
       </div>
     </article>
   );

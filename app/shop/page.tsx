@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ShopCatalogue } from "@/components/shop-catalogue";
+import { getPaintings } from "@/lib/catalog-data";
 
 export const metadata: Metadata = {
   title: "Shop Original Paintings",
   description: "Browse available original paintings by Elyzaveta Izsak.",
 };
 
-export default function ShopPage() {
+export default async function ShopPage() {
+  const paintings = await getPaintings();
   return (
     <main className="page-shell shell" id="main-content">
       <header className="page-intro">
@@ -20,7 +22,7 @@ export default function ShopPage() {
           <div className="catalogue-skeleton" aria-label="Loading collection" />
         }
       >
-        <ShopCatalogue />
+        <ShopCatalogue paintings={paintings} />
       </Suspense>
     </main>
   );

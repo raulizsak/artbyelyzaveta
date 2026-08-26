@@ -2348,6 +2348,346 @@ blockquote {
   }
 }
 
+/* Account and shop-management surfaces */
+.auth-page {
+  display: grid;
+  min-height: 68vh;
+  padding-block: clamp(3rem, 8vw, 7rem);
+  place-items: start center;
+}
+.auth-card,
+.account-panel,
+.admin-action-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+  padding: clamp(1.35rem, 3vw, 2.6rem);
+}
+.auth-card {
+  display: grid;
+  gap: 1.2rem;
+  max-width: 620px;
+  width: 100%;
+}
+.auth-card h1,
+.account-panel h1 {
+  font-family: var(--font-display);
+  font-size: var(--type-display-section);
+  font-weight: 500;
+  margin: 0;
+}
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+.auth-links a,
+.pagination a {
+  color: var(--olive-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+.dashboard-shell {
+  align-items: start;
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+  padding-block: clamp(2rem, 5vw, 4rem);
+}
+.dashboard-nav {
+  display: grid;
+  gap: 1rem;
+  position: sticky;
+  top: 110px;
+}
+.dashboard-nav nav {
+  border-block: 1px solid var(--border);
+  display: grid;
+  padding-block: 0.65rem;
+}
+.dashboard-nav nav a {
+  border-radius: var(--radius);
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+}
+.dashboard-nav nav a:hover,
+.dashboard-nav nav a:focus-visible {
+  background: var(--surface);
+}
+.dashboard-content,
+.account-panel,
+.painting-editor {
+  display: grid;
+  gap: 1.4rem;
+  min-width: 0;
+}
+.dashboard-cards,
+.metric-grid,
+.address-grid,
+.detail-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dashboard-cards a,
+.metric-grid article,
+.address-grid article,
+.detail-grid > article,
+.detail-grid > section,
+.notice,
+.return-admin-card {
+  background: color-mix(in srgb, var(--surface) 88%, var(--olive) 12%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.dashboard-cards a,
+.metric-grid article {
+  display: grid;
+  gap: 0.35rem;
+}
+.metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.metric-grid strong {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 500;
+}
+.order-list,
+.return-admin-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.order-card {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1.5fr auto;
+  min-height: 72px;
+  padding: 1rem;
+}
+.order-card span,
+.admin-order-row span,
+.security-factor span {
+  display: grid;
+  gap: 0.25rem;
+}
+.order-card small,
+.admin-order-row small,
+.security-factor small,
+.order-timeline small {
+  color: var(--muted);
+}
+.status-row,
+.editor-checks,
+.button-row,
+.section-heading,
+.security-factor {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.status-row span,
+.return-admin-card > .section-heading > span {
+  background: color-mix(in srgb, var(--olive) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--olive) 34%, var(--border));
+  border-radius: 999px;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.7rem;
+  text-transform: capitalize;
+}
+.section-heading {
+  justify-content: space-between;
+}
+.section-heading h1,
+.section-heading h2 {
+  margin: 0;
+}
+.admin-filters {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr minmax(150px, 220px) auto;
+}
+.admin-filters input,
+.admin-filters select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 46px;
+  padding: 0.7rem 0.85rem;
+}
+.admin-order-table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.admin-order-table__head,
+.admin-order-row {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.1fr 1.35fr 1.2fr 0.7fr 0.85fr;
+  padding: 0.9rem 1rem;
+}
+.admin-order-table__head {
+  background: color-mix(in srgb, var(--olive) 9%, var(--surface));
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.admin-order-row {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  min-height: 76px;
+}
+.admin-order-row:hover {
+  background: color-mix(in srgb, var(--surface) 90%, var(--olive) 10%);
+}
+.pagination {
+  display: flex;
+  justify-content: space-between;
+}
+.order-timeline {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.order-timeline li {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 12px 1fr;
+  min-height: 64px;
+}
+.order-timeline li > span {
+  background: var(--olive);
+  border-radius: 50%;
+  height: 9px;
+  margin-top: 0.35rem;
+  position: relative;
+  width: 9px;
+}
+.order-timeline li:not(:last-child) > span::after {
+  background: var(--border);
+  content: "";
+  height: 54px;
+  left: 4px;
+  position: absolute;
+  top: 10px;
+  width: 1px;
+}
+.order-timeline div {
+  display: grid;
+  gap: 0.25rem;
+}
+.admin-action-panel,
+.refund-form,
+.return-action,
+.mfa-enrolment,
+.stripe-payment {
+  display: grid;
+  gap: 1rem;
+}
+.security-factor {
+  border-block-end: 1px solid var(--border);
+  justify-content: space-between;
+  padding-block: 0.8rem;
+}
+.mfa-enrolment img {
+  background: white;
+  border: 1px solid var(--border);
+  height: 220px;
+  padding: 0.5rem;
+  width: 220px;
+}
+.mfa-enrolment code {
+  overflow-wrap: anywhere;
+}
+.payment-panel__body {
+  display: grid;
+  gap: 0.85rem;
+  width: 100%;
+}
+.evidence-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.evidence-grid a {
+  text-decoration: underline;
+}
+.form-success-inline {
+  color: var(--olive-dark);
+  font-weight: 600;
+}
+.form-help {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 850px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-nav {
+    position: static;
+  }
+  .dashboard-nav nav {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+  }
+  .dashboard-nav nav a {
+    flex: 0 0 auto;
+  }
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-order-table__head {
+    display: none;
+  }
+  .admin-order-table {
+    border: 0;
+    display: grid;
+    gap: 0.75rem;
+    overflow: visible;
+  }
+  .admin-order-row {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-card,
+  .account-panel,
+  .admin-action-panel {
+    padding: 1.1rem;
+  }
+  .dashboard-cards,
+  .metric-grid,
+  .address-grid,
+  .detail-grid,
+  .order-card,
+  .admin-order-row,
+  .admin-filters {
+    grid-template-columns: 1fr;
+  }
+  .order-card,
+  .admin-order-row {
+    min-height: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .trust-strip {
     grid-template-columns: 1fr;

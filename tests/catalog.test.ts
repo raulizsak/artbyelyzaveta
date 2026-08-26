@@ -1,26 +1,25 @@
 import { describe, expect, it } from "vitest";
-import {
-  COWS_AT_DUSK,
-  PAINTINGS,
-  formatMoney,
-  paintingDimensions,
-} from "../lib/catalog";
+import { formatMoney, paintingDimensions } from "../lib/catalog";
+import { LOCAL_CATALOGUE_FIXTURE } from "../lib/catalog-fixture";
 import { POLICIES } from "../lib/policies";
 
 describe("the Phase 1 catalogue", () => {
   it("contains exactly one unique original", () => {
-    expect(PAINTINGS).toHaveLength(1);
-    expect(new Set(PAINTINGS.map((painting) => painting.slug)).size).toBe(1);
-    expect(COWS_AT_DUSK.status).toBe("available");
+    expect(LOCAL_CATALOGUE_FIXTURE).toHaveLength(1);
+    expect(
+      new Set(LOCAL_CATALOGUE_FIXTURE.map((painting) => painting.slug)).size,
+    ).toBe(1);
+    expect(LOCAL_CATALOGUE_FIXTURE[0].status).toBe("available");
   });
 
   it("keeps the verified artwork facts intact", () => {
-    expect(formatMoney(COWS_AT_DUSK.price)).toBe("$1,370");
-    expect(paintingDimensions(COWS_AT_DUSK)).toBe("90 × 60 × 1 cm");
-    expect(COWS_AT_DUSK.readyToHang).toBe(true);
-    expect(COWS_AT_DUSK.certificate).toBe(true);
-    expect(COWS_AT_DUSK.framed).toBe(false);
-    expect(COWS_AT_DUSK.media).toHaveLength(5);
+    const painting = LOCAL_CATALOGUE_FIXTURE[0];
+    expect(formatMoney(painting.priceCents)).toBe("$1,370");
+    expect(paintingDimensions(painting)).toBe("90 × 60 × 1 cm");
+    expect(painting.readyToHang).toBe(true);
+    expect(painting.certificate).toBe(true);
+    expect(painting.framed).toBe(false);
+    expect(painting.media).toHaveLength(5);
   });
 
   it("publishes all required policy documents with the supplied update date", () => {

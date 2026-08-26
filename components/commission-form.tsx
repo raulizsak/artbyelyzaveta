@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -11,8 +10,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type CommissionValues = {
@@ -36,10 +34,11 @@ type UploadItem = {
   file: File;
   previewUrl: string;
   status: UploadStatus;
-  storageId?: Id<"_storage">;
+  stored?: StoredUpload;
 };
 type StoredUpload = {
-  storageId: Id<"_storage">;
+  path: string;
+  token?: string;
   fileName: string;
   contentType: AllowedMime;
   size: number;
@@ -62,7 +61,7 @@ const allowedTypes = new Set<AllowedMime>([
   "image/png",
   "image/webp",
 ]);
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const isAllowedType = (type: string): type is AllowedMime =>
   allowedTypes.has(type as AllowedMime);
@@ -102,8 +101,6 @@ export function CommissionForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadsRef = useRef<UploadItem[]>([]);
   const shakeTimerRef = useRef<number | null>(null);
-  const generateUploadUrl = useMutation(api.enquiries.generateUploadUrl);
-  const submit = useMutation(api.enquiries.submitCommission);
   const [form, setForm] = useState<CommissionValues>(empty);
   const [errors, setErrors] = useState<ErrorMap>({});
   const [submitted, setSubmitted] = useState(false);
@@ -170,7 +167,7 @@ export function CommissionForm() {
     }
     if (incoming.some((file) => file.size > MAX_IMAGE_BYTES)) {
       setUploadError(
-        "This image is larger than 10 MB. Please choose a smaller file.",
+        "This image is larger than 8 MB. Please choose a smaller file.",
       );
       return;
     }
@@ -216,34 +213,45 @@ export function CommissionForm() {
   const uploadFiles = async (): Promise<StoredUpload[]> => {
     const stored: StoredUpload[] = [];
     for (const item of uploads) {
-      if (item.storageId) {
-        stored.push({
-          storageId: item.storageId,
-          fileName: item.file.name,
-          contentType: item.file.type as AllowedMime,
-          size: item.file.size,
-        });
+      if (item.stored) {
+        stored.push(item.stored);
         continue;
       }
       updateUpload(item.key, { status: "uploading" });
       try {
-        const uploadUrl = await generateUploadUrl({});
-        const response = await fetch(uploadUrl, {
+        const preparation = await fetch("/api/enquiries/commission/uploads", {
           method: "POST",
-          headers: { "Content-Type": item.file.type },
-          body: item.file,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            files: [
+              {
+                fileName: item.file.name,
+                contentType: item.file.type,
+                size: item.file.size,
+              },
+            ],
+          }),
         });
-        if (!response.ok) throw new Error("upload failed");
-        const result = (await response.json()) as { storageId?: string };
-        if (!result.storageId) throw new Error("missing storage id");
-        const storageId = result.storageId as Id<"_storage">;
-        updateUpload(item.key, { status: "uploaded", storageId });
-        stored.push({
-          storageId,
+        if (!preparation.ok) throw new Error("upload failed");
+        const prepared = (await preparation.json()) as {
+          uploads?: StoredUpload[];
+        };
+        const target = prepared.uploads?.[0];
+        if (!target?.token) throw new Error("missing upload token");
+        const uploaded = await createClient()
+          .storage.from("commission-inspiration")
+          .uploadToSignedUrl(target.path, target.token, item.file, {
+            contentType: item.file.type,
+          });
+        if (uploaded.error) throw uploaded.error;
+        const result: StoredUpload = {
+          path: target.path,
           fileName: item.file.name,
           contentType: item.file.type as AllowedMime,
           size: item.file.size,
-        });
+        };
+        updateUpload(item.key, { status: "uploaded", stored: result });
+        stored.push(result);
       } catch {
         updateUpload(item.key, { status: "error" });
         setUploadError("We couldn't upload this image. Please try again.");
@@ -267,7 +275,12 @@ export function CommissionForm() {
       setState("uploading");
       const inspirationFiles = await uploadFiles();
       setState("sending");
-      await submit({ ...form, inspirationFiles });
+      const response = await fetch("/api/enquiries/commission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, inspirationFiles }),
+      });
+      if (!response.ok) throw new Error("submission failed");
       uploads.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setUploads([]);
       setForm(empty);
@@ -401,7 +414,7 @@ export function CommissionForm() {
                   ? "Painting in progress · uploading photos"
                   : uploads.length
                     ? `${uploads.length} of 3 photos selected`
-                    : "JPG, PNG or WEBP · up to 10 MB each"}
+                    : "JPG, PNG or WEBP · up to 8 MB each"}
               </span>
             </span>
             <button

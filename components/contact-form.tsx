@@ -1,9 +1,7 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, CircleAlert, LoaderCircle, Send } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 
 type ContactValues = {
@@ -38,7 +36,6 @@ const validate = (values: ContactValues): ErrorMap => {
 export function ContactForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const shakeTimerRef = useRef<number | null>(null);
-  const submit = useMutation(api.enquiries.submitContact);
   const [form, setForm] = useState<ContactValues>(empty);
   const [errors, setErrors] = useState<ErrorMap>({});
   const [submitted, setSubmitted] = useState(false);
@@ -96,7 +93,12 @@ export function ContactForm() {
     setFormError("");
     setState("sending");
     try {
-      await submit(form);
+      const response = await fetch("/api/enquiries/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!response.ok) throw new Error("contact-failed");
       setForm(empty);
       setSubmitted(false);
       setState("success");

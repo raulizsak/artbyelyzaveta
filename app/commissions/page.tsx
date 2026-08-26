@@ -25,9 +25,9 @@ export default function CommissionsPage() {
         <Image
           alt="Cows at Dusk displayed in a warm neutral home"
           height={1402}
-          priority
+          loading="eager"
           sizes="(max-width: 800px) 100vw, 52vw"
-          src="/artwork/cows-at-dusk-warm-room.png"
+          src="/optimized/artwork/cows-at-dusk-warm-room-main.webp"
           width={1122}
         />
       </section>

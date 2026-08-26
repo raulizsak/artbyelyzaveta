@@ -3,30 +3,35 @@
 import { SlidersHorizontal, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
 import Drawer from "@/components/smoothui/drawer";
 import { PaintingCard } from "@/components/painting-card";
-import { api } from "@/convex/_generated/api";
-import { COWS_AT_DUSK, type Painting } from "@/lib/catalog";
+import type { Painting } from "@/lib/catalog";
 
-export function ShopCatalogue() {
+export function ShopCatalogue({ paintings }: { paintings: Painting[] }) {
   const params = useSearchParams();
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [availability, setAvailability] = useState("all");
   const [sort, setSort] = useState("featured");
-  const catalogue = useQuery(api.paintings.listPublished);
-  const painting = (catalogue?.[0] ?? COWS_AT_DUSK) as Painting;
   const query = (params.get("q") ?? "").toLowerCase();
   const visible = useMemo(() => {
-    if (availability === "sold") return false;
-    return (
-      !query ||
-      `${painting.title} ${painting.category} ${painting.medium} landscape animal`
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [availability, painting, query]);
+    const filtered = paintings.filter((painting) => {
+      if (availability !== "all" && painting.status !== availability)
+        return false;
+      return (
+        !query ||
+        `${painting.title} ${painting.category ?? ""} ${painting.medium ?? ""} ${painting.description}`
+          .toLowerCase()
+          .includes(query)
+      );
+    });
+    return [...filtered].sort((a, b) => {
+      if (sort === "price-asc") return a.priceCents - b.priceCents;
+      if (sort === "price-desc") return b.priceCents - a.priceCents;
+      if (sort === "newest") return b.createdAt.localeCompare(a.createdAt);
+      return Number(b.featured) - Number(a.featured);
+    });
+  }, [availability, paintings, query, sort]);
 
   const filters = (
     <div className="filter-fields">
@@ -64,7 +69,9 @@ export function ShopCatalogue() {
     <>
       <div className="catalogue-toolbar">
         <p>
-          {visible ? "1 original" : "No originals"}
+          {visible.length
+            ? `${visible.length} original${visible.length === 1 ? "" : "s"}`
+            : "No originals"}
           {query ? ` matching “${params.get("q")}”` : ""}
         </p>
         <div className="desktop-filters">{filters}</div>
@@ -85,9 +92,11 @@ export function ShopCatalogue() {
           Search: {params.get("q")} <X aria-hidden="true" size={14} />
         </button>
       ) : null}
-      {visible ? (
+      {visible.length ? (
         <div className="catalogue-grid">
-          <PaintingCard painting={painting} />
+          {visible.map((painting) => (
+            <PaintingCard key={painting.id} painting={painting} />
+          ))}
         </div>
       ) : (
         <div className="empty-state catalogue-empty">
@@ -115,7 +124,10 @@ export function ShopCatalogue() {
             onClick={() => setFiltersOpen(false)}
             type="button"
           >
-            Show {visible ? "1 work" : "no works"}
+            Show{" "}
+            {visible.length
+              ? `${visible.length} work${visible.length === 1 ? "" : "s"}`
+              : "no works"}
           </button>
         }
         onOpenChange={setFiltersOpen}

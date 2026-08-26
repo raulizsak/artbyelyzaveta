@@ -8,15 +8,15 @@ import {
   useMemo,
   useState,
 } from "react";
-import { COWS_AT_DUSK, type Painting } from "@/lib/catalog";
+import type { CartPainting } from "@/lib/catalog";
 
-type CartItem = { slug: string; quantity: 1 };
+export type CartItem = CartPainting & { quantity: 1 };
 type RemovedItem = CartItem | null;
 type CartContextValue = {
   items: CartItem[];
   count: number;
   subtotal: number;
-  add: (painting?: Painting) => void;
+  add: (painting: CartPainting) => void;
   remove: (slug: string) => void;
   undoRemove: () => void;
   clear: () => void;
@@ -37,9 +37,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const value = window.localStorage.getItem(STORAGE_KEY);
-      // Local storage is the durable cart source and is only available after client mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (value) setItems(JSON.parse(value) as CartItem[]);
+      if (value) {
+        const parsed = JSON.parse(value) as CartItem[];
+        // Local storage is the durable cart source and is only available after client mount.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (Array.isArray(parsed)) setItems(parsed.filter((item) => item.slug));
+      }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     } finally {
@@ -52,11 +55,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [hydrated, items]);
 
-  const add = useCallback((painting: Painting = COWS_AT_DUSK) => {
+  const add = useCallback((painting: CartPainting) => {
     setItems((current) =>
       current.some((item) => item.slug === painting.slug)
         ? current
-        : [...current, { slug: painting.slug, quantity: 1 }],
+        : [...current, { ...painting, quantity: 1 }],
     );
     setRemovedItem(null);
     setCartOpen(true);
@@ -84,9 +87,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       items,
       count: items.length,
-      subtotal: items.some((item) => item.slug === COWS_AT_DUSK.slug)
-        ? COWS_AT_DUSK.price
-        : 0,
+      subtotal: items.reduce(
+        (total, item) => total + item.priceCents * item.quantity,
+        0,
+      ),
       add,
       remove,
       undoRemove,

@@ -3,13 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Search, ShoppingBag, Trash2 } from "lucide-react";
+import { Menu, Search, ShoppingBag, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
 import Drawer from "@/components/smoothui/drawer";
 import { BrandLogo } from "@/components/brand-logo";
 import { useCart } from "@/components/cart-provider";
 import SmoothButton from "@/components/ui/smoothui/smooth-button";
-import { COWS_AT_DUSK, formatMoney } from "@/lib/catalog";
+import { formatMoney, paintingDimensions } from "@/lib/catalog";
 
 const navigation = [
   { href: "/shop", label: "Shop" },
@@ -68,6 +68,13 @@ export function SiteHeader() {
               <ShoppingBag aria-hidden="true" size={20} strokeWidth={1.7} />
               {cart.count > 0 ? <span>{cart.count}</span> : null}
             </button>
+            <Link
+              aria-label="Your account"
+              className="icon-button"
+              href="/account"
+            >
+              <UserRound aria-hidden="true" size={19} strokeWidth={1.7} />
+            </Link>
             <button
               aria-label="Open menu"
               className="icon-button mobile-menu-button"
@@ -126,13 +133,13 @@ export function SiteHeader() {
               <Search aria-hidden="true" size={19} />
             </button>
           </div>
-          <p>One original is currently available.</p>
+          <p>Search current and sold original works.</p>
         </form>
       </Drawer>
 
       <Drawer
         className="gallery-drawer gallery-drawer--right cart-drawer"
-        description="Original artwork is held in your browser only."
+        description="Your selection is saved on this device until checkout."
         footer={
           cart.count ? (
             <div className="cart-drawer__footer">
@@ -147,7 +154,7 @@ export function SiteHeader() {
                 variant="solid"
               >
                 <Link href="/checkout" onClick={() => cart.setCartOpen(false)}>
-                  Continue to demo checkout
+                  Continue to checkout
                 </Link>
               </SmoothButton>
               <Link
@@ -166,31 +173,38 @@ export function SiteHeader() {
         title="Your bag"
       >
         {cart.count ? (
-          <div className="cart-line">
-            <Image
-              alt={COWS_AT_DUSK.media[0].alt}
-              height={120}
-              src={COWS_AT_DUSK.media[0].src}
-              width={120}
-            />
-            <div>
-              <Link
-                href="/shop/cows-at-dusk"
-                onClick={() => cart.setCartOpen(false)}
-              >
-                <strong>{COWS_AT_DUSK.title}</strong>
-              </Link>
-              <p>Oil on canvas · 90 × 60 cm</p>
-              <span>{formatMoney(COWS_AT_DUSK.price)}</span>
-            </div>
-            <button
-              aria-label="Remove Cows at Dusk from bag"
-              className="icon-button"
-              onClick={() => cart.remove(COWS_AT_DUSK.slug)}
-              type="button"
-            >
-              <Trash2 aria-hidden="true" size={17} />
-            </button>
+          <div className="cart-lines">
+            {cart.items.map((item) => (
+              <div className="cart-line" key={item.id}>
+                <Image
+                  alt={item.image.alt}
+                  height={120}
+                  src={item.image.thumbnailSrc}
+                  width={120}
+                />
+                <div>
+                  <Link
+                    href={`/shop/${item.slug}`}
+                    onClick={() => cart.setCartOpen(false)}
+                  >
+                    <strong>{item.title}</strong>
+                  </Link>
+                  <p>
+                    {item.medium ?? "Original artwork"} ·{" "}
+                    {paintingDimensions(item)}
+                  </p>
+                  <span>{formatMoney(item.priceCents, item.currency)}</span>
+                </div>
+                <button
+                  aria-label={`Remove ${item.title} from bag`}
+                  className="icon-button"
+                  onClick={() => cart.remove(item.slug)}
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" size={17} />
+                </button>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="empty-state compact-empty">

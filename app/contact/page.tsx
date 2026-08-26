@@ -36,8 +36,8 @@ export default function ContactPage() {
             </p>
           </div>
           <p className="response-note">
-            This Phase 1 form saves a private enquiry in the store database.
-            Automated email is intentionally deferred.
+            Your enquiry is stored privately and used only to reply to your
+            request.
           </p>
         </aside>
         <ContactForm />

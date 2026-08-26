@@ -1,107 +1,83 @@
-export type PaintingStatus = "draft" | "available" | "reserved" | "sold";
+export type PaintingStatus =
+  | "draft"
+  | "available"
+  | "reserved"
+  | "sold"
+  | "archived";
+
+export type MediaKind = "room" | "detail" | "artwork";
+export type MediaVariant = "thumbnail" | "card" | "main" | "large" | "original";
 
 export type PaintingMedia = {
+  id: string;
   src: string;
+  thumbnailSrc: string;
+  largeSrc: string;
   alt: string;
   width: number;
   height: number;
-  kind: "room" | "detail" | "artwork";
+  kind: MediaKind;
+  position: number;
 };
 
 export type Painting = {
+  id: string;
   slug: string;
   title: string;
   description: string;
   story: string;
-  price: number;
-  currency: "AUD";
-  widthCm: number;
-  heightCm: number;
-  depthCm: number;
-  medium: string;
-  surface: string;
-  category: string;
-  orientation: "landscape" | "portrait" | "square";
+  priceCents: number;
+  currency: string;
+  widthCm: number | null;
+  heightCm: number | null;
+  depthCm: number | null;
+  medium: string | null;
+  surface: string | null;
+  category: string | null;
+  orientation: "landscape" | "portrait" | "square" | "other" | null;
   framed: boolean;
-  frameDescription: string;
-  signed: boolean | null;
+  frameDescription: string | null;
+  signed: boolean;
   readyToHang: boolean;
   certificate: boolean;
   status: PaintingStatus;
   featured: boolean;
   year: number | null;
   media: PaintingMedia[];
-  seoTitle: string;
-  seoDescription: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  createdAt: string;
 };
 
-export const COWS_AT_DUSK: Painting = {
-  slug: "cows-at-dusk",
-  title: "Cows at Dusk",
-  description:
-    "An original oil landscape on canvas, bringing together rolling green country, grazing cattle and the gentle light of dusk.",
-  story:
-    "A quiet rural scene unfolds beneath an expressive evening sky. The winding track, long shadows and distant fields lead the eye through a landscape made for slow looking.",
-  price: 137000,
-  currency: "AUD",
-  widthCm: 90,
-  heightCm: 60,
-  depthCm: 1,
-  medium: "Oil",
-  surface: "Canvas",
-  category: "Expressionism",
-  orientation: "landscape",
-  framed: false,
-  frameDescription: "Unframed",
-  signed: null,
-  readyToHang: true,
-  certificate: true,
-  status: "available",
-  featured: true,
-  year: null,
-  media: [
-    {
-      src: "/artwork/cows-at-dusk-gallery-wall.png",
-      alt: "Cows at Dusk displayed in a simple timber frame on a softly lit wall",
-      width: 1080,
-      height: 1080,
-      kind: "artwork",
-    },
-    {
-      src: "/artwork/cows-at-dusk-warm-room.png",
-      alt: "Cows at Dusk displayed above a console in a warm neutral living room",
-      width: 1122,
-      height: 1402,
-      kind: "room",
-    },
-    {
-      src: "/artwork/cows-at-dusk-classic-room.png",
-      alt: "Cows at Dusk displayed in a classical cream living room",
-      width: 1122,
-      height: 1402,
-      kind: "room",
-    },
-    {
-      src: "/artwork/cows-at-dusk-console-room.png",
-      alt: "Cows at Dusk displayed above a minimalist console",
-      width: 1080,
-      height: 1080,
-      kind: "room",
-    },
-    {
-      src: "/artwork/cows-at-dusk-modern-room.png",
-      alt: "Cows at Dusk displayed in a modern dining space",
-      width: 1080,
-      height: 1080,
-      kind: "room",
-    },
-  ],
-  seoTitle: "Cows at Dusk — Original Oil Painting | Art by Elyzaveta",
-  seoDescription:
-    "Cows at Dusk, an original 90 × 60 cm oil painting on canvas by Elyzaveta Izsak. Ready to hang and supplied with a certificate of authenticity.",
-};
+export type CartPainting = Pick<
+  Painting,
+  | "id"
+  | "slug"
+  | "title"
+  | "priceCents"
+  | "currency"
+  | "medium"
+  | "surface"
+  | "widthCm"
+  | "heightCm"
+  | "depthCm"
+  | "status"
+> & { image: PaintingMedia };
 
-export const PAINTINGS = [COWS_AT_DUSK] as const;
+export const toCartPainting = (painting: Painting): CartPainting => ({
+  id: painting.id,
+  slug: painting.slug,
+  title: painting.title,
+  priceCents: painting.priceCents,
+  currency: painting.currency,
+  medium: painting.medium,
+  surface: painting.surface,
+  widthCm: painting.widthCm,
+  heightCm: painting.heightCm,
+  depthCm: painting.depthCm,
+  status: painting.status,
+  image: painting.media[0],
+});
 
 export const formatMoney = (cents: number, currency = "AUD") =>
   new Intl.NumberFormat("en-AU", {
@@ -110,5 +86,31 @@ export const formatMoney = (cents: number, currency = "AUD") =>
     maximumFractionDigits: 0,
   }).format(cents / 100);
 
-export const paintingDimensions = (painting: Painting) =>
-  `${painting.widthCm} × ${painting.heightCm} × ${painting.depthCm} cm`;
+const formatDimension = (value: number | null) =>
+  value === null ? null : Number.isInteger(value) ? `${value}` : `${value}`;
+
+export const paintingDimensions = (
+  painting: Pick<Painting, "widthCm" | "heightCm" | "depthCm">,
+) => {
+  const dimensions = [
+    formatDimension(painting.widthCm),
+    formatDimension(painting.heightCm),
+    formatDimension(painting.depthCm),
+  ].filter(Boolean);
+  return dimensions.length
+    ? `${dimensions.join(" × ")} cm`
+    : "Dimensions on request";
+};
+
+export const availabilityLabel = (status: PaintingStatus) => {
+  switch (status) {
+    case "available":
+      return "Available · One of one";
+    case "reserved":
+      return "Currently reserved";
+    case "sold":
+      return "Sold";
+    default:
+      return "Not currently available";
+  }
+};

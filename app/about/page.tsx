@@ -24,9 +24,9 @@ export default function AboutPage() {
           <Image
             alt="Portrait of Elyzaveta in a leafy garden"
             fill
-            priority
+            loading="eager"
             sizes="(max-width: 900px) 100vw, 42vw"
-            src="/artist/lisa-portrait.jpg"
+            src="/optimized/artist/lisa-portrait-main.webp"
           />
         </div>
       </section>
@@ -36,7 +36,7 @@ export default function AboutPage() {
             alt="Cows at Dusk in a warm interior"
             height={1402}
             sizes="(max-width: 800px) 100vw, 45vw"
-            src="/artwork/cows-at-dusk-classic-room.png"
+            src="/optimized/artwork/cows-at-dusk-classic-room-main.webp"
             width={1122}
           />
         </div>
