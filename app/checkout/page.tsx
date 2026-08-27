@@ -22,7 +22,7 @@ export default async function CheckoutPage() {
     const [{ data: profile }, { data: address }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("first_name, last_name, email, phone")
+        .select("first_name, last_name, phone")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -34,7 +34,7 @@ export default async function CheckoutPage() {
     initialDetails = {
       firstName: profile?.first_name ?? "",
       lastName: profile?.last_name ?? "",
-      email: profile?.email ?? user.email ?? "",
+      email: user.email ?? "",
       phone: profile?.phone ?? "",
       address: address?.line1 ?? "",
       suburb: address?.suburb ?? "",

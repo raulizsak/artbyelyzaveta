@@ -61,8 +61,11 @@ export async function PATCH(
       ? await supabase.rpc("admin_update_commission", {
           p_order_id: id,
           p_stage: value.commissionStage,
-          p_eta: value.commissionEta || null,
-          p_expected_dispatch: value.expectedDispatch || null,
+          // PostgreSQL function arguments are nullable, but generated
+          // PostgREST types cannot represent argument nullability.
+          p_eta: (value.commissionEta || null) as unknown as string,
+          p_expected_dispatch: (value.expectedDispatch ||
+            null) as unknown as string,
           p_customer_message: value.customerMessage,
           p_internal_notes: value.internalNotes,
           p_notify: value.notify,

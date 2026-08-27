@@ -56,7 +56,8 @@ export async function POST(
       },
       { idempotencyKey: `admin-refund-${parsed.data.idempotencyKey}` },
     );
-    const status = refund.status === "canceled" ? "cancelled" : refund.status;
+    const status =
+      refund.status === "canceled" ? "cancelled" : (refund.status ?? "pending");
     await admin.from("refunds").upsert(
       {
         order_id: order.id,

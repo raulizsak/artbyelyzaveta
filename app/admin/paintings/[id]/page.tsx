@@ -1,18 +1,24 @@
 import { notFound } from "next/navigation";
 import { PaintingEditor } from "@/components/painting-editor";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminAal2 } from "@/lib/auth/authorization";
+import { paintingInputSchema } from "@/lib/painting-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const id = (await params).id;
-  const { data } = await (await createClient())
+  await requireAdminAal2(`/admin/paintings/${encodeURIComponent(id)}`);
+  const { data } = await createAdminClient()
     .from("paintings")
     .select("*")
     .eq("id", id)
     .maybeSingle();
   if (!data) notFound();
+  const catalogueState = paintingInputSchema
+    .pick({ orientation: true, status: true })
+    .parse({ orientation: data.orientation, status: data.status });
   return (
     <PaintingEditor
       initial={{
@@ -29,13 +35,13 @@ export default async function Page({
         medium: data.medium,
         surface: data.surface,
         category: data.category,
-        orientation: data.orientation,
+        orientation: catalogueState.orientation,
         framed: data.framed,
         frameDescription: data.frame_description,
         signed: data.signed,
         readyToHang: data.ready_to_hang,
         certificate: data.certificate,
-        status: data.status,
+        status: catalogueState.status,
         featured: data.featured,
         year: data.year,
         seoTitle: data.seo_title,

@@ -39,7 +39,10 @@ export async function PATCH(
     p_return_id: id,
     p_status: parsed.data.status,
     p_response: parsed.data.response,
-    p_approved_refund_cents: parsed.data.approvedRefundCents,
+    // Function arguments are nullable in PostgreSQL; the generated client
+    // cannot infer that property from pg_proc.
+    p_approved_refund_cents: parsed.data
+      .approvedRefundCents as unknown as number,
     p_notify: parsed.data.notify,
   });
   if (error)

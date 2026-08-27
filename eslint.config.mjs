@@ -5,5 +5,9 @@ import nextTypescript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
-  globalIgnores(["convex/_generated", "supabase/functions/**"]),
+  globalIgnores([
+    "convex/_generated",
+    "supabase/.temp/**",
+    "supabase/functions/**",
+  ]),
 ]);

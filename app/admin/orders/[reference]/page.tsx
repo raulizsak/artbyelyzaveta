@@ -4,8 +4,9 @@ import { AdminOrderActions } from "@/components/admin-order-actions";
 import { EmailInvoiceButton } from "@/components/email-invoice-button";
 import { RefundForm } from "@/components/refund-form";
 import { ResendOrderEmailButton } from "@/components/resend-order-email-button";
+import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page({
   params,
@@ -13,7 +14,8 @@ export default async function Page({
   params: Promise<{ reference: string }>;
 }) {
   const reference = (await params).reference;
-  const { data: order } = await (await createClient())
+  await requireAdminAal2(`/admin/orders/${encodeURIComponent(reference)}`);
+  const { data: order } = await createAdminClient()
     .from("orders")
     .select("*, order_items(*), order_events(*), refunds(*), invoices(*)")
     .eq("order_reference", reference)

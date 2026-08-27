@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
-  const { data } = await (await createClient())
+  await requireAdminAal2("/admin/paintings");
+  const { data } = await createAdminClient()
     .from("paintings")
     .select(
       "id, slug, title, price_cents, currency, status, featured, updated_at, painting_media(id)",

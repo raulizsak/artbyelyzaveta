@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminAal2 } from "@/lib/auth/authorization";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
-  const supabase = await createClient();
+  await requireAdminAal2("/admin");
+  const supabase = createAdminClient();
   const [paid, preparing, shipped, returns, available, sold, recent] =
     await Promise.all([
       supabase

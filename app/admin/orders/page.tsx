@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 25;
 export default async function Page({
@@ -13,7 +14,8 @@ export default async function Page({
   const search = (params.q || "")
     .replace(/[^a-zA-Z0-9@. +_-]/g, "")
     .slice(0, 80);
-  const supabase = await createClient();
+  await requireAdminAal2("/admin/orders");
+  const supabase = createAdminClient();
   let matchingOrderIds: string[] = [];
   if (search) {
     const { data: matchingItems } = await supabase

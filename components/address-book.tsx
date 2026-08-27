@@ -50,7 +50,9 @@ export function AddressBook({ initial }: { initial: Address[] }) {
     setError("");
     setSaving(true);
     const { error: saveError } = await createClient().rpc("save_my_address", {
-      p_id: editingId,
+      // PostgreSQL function arguments are nullable, but generated
+      // PostgREST types cannot represent argument nullability.
+      p_id: editingId as unknown as string,
       p_label: form.label,
       p_recipient_name: form.recipient_name,
       p_line1: form.line1,

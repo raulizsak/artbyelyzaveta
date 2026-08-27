@@ -65,7 +65,9 @@ export async function POST(request: Request) {
         : {};
     const { data, error } = await admin.rpc("create_checkout_reservation", {
       p_painting_id: input.paintingId,
-      p_customer_user_id: userId,
+      // PostgreSQL function arguments are nullable, but generated
+      // PostgREST types cannot represent argument nullability.
+      p_customer_user_id: userId as unknown as string,
       p_customer_email: input.email,
       p_customer_first_name: input.firstName,
       p_customer_last_name: input.lastName,
@@ -126,12 +128,12 @@ export async function POST(request: Request) {
       {
         p_order_id: orderId,
         p_session_id: session.id,
-        p_payment_intent_id:
-          typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : null,
-        p_stripe_customer_id:
-          typeof session.customer === "string" ? session.customer : null,
+        p_payment_intent_id: (typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : null) as unknown as string,
+        p_stripe_customer_id: (typeof session.customer === "string"
+          ? session.customer
+          : null) as unknown as string,
       },
     );
     if (attachError) throw attachError;

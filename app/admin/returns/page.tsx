@@ -1,7 +1,9 @@
 import { AdminReturnActions } from "@/components/admin-return-actions";
+import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
+  await requireAdminAal2("/admin/returns");
   const admin = createAdminClient();
   const { data } = await admin
     .from("return_requests")
@@ -15,17 +17,18 @@ export default async function Page() {
       const evidence = request.return_evidence as unknown as {
         storage_path: string;
       }[];
-      const urls = await Promise.all(
-        evidence
-          .map(
-            async (file) =>
-              (
-                await admin.storage
-                  .from("return-evidence")
-                  .createSignedUrl(file.storage_path, 300)
-              ).data?.signedUrl,
-          )
-          .filter(Boolean),
+      const signedUrls = await Promise.all(
+        evidence.map(
+          async (file) =>
+            (
+              await admin.storage
+                .from("return-evidence")
+                .createSignedUrl(file.storage_path, 300)
+            ).data?.signedUrl,
+        ),
+      );
+      const urls = signedUrls.filter(
+        (url): url is string => typeof url === "string",
       );
       return { ...request, evidenceUrls: urls };
     }),
@@ -59,7 +62,7 @@ export default async function Page() {
                 <p>{request.explanation}</p>
                 {request.evidenceUrls.length ? (
                   <div className="evidence-grid">
-                    {request.evidenceUrls.map((url: string) => (
+                    {request.evidenceUrls.map((url) => (
                       <a href={url} key={url} rel="noreferrer" target="_blank">
                         View private evidence
                       </a>
