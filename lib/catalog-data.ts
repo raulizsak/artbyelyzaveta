@@ -132,7 +132,17 @@ export async function getPaintings(): Promise<Painting[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("paintings")
-    .select("*, painting_media(*)")
+    .select(
+      `
+      id, slug, title, description, story, price_cents, currency,
+      width_cm, height_cm, depth_cm, medium, surface, category, orientation,
+      framed, frame_description, signed, ready_to_hang, certificate,
+      status, featured, year, seo_title, seo_description, created_at,
+      painting_media (
+        id, kind, storage_path, variant, width, height, alt_text, position
+      )
+    `,
+    )
     .order("featured", { ascending: false })
     .order("created_at", { ascending: false });
 
