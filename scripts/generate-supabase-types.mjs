@@ -25,7 +25,7 @@ if (!stdout.startsWith("export type Json")) {
   throw new Error("Supabase did not return a valid TypeScript schema.");
 }
 
-await writeFile(output, stdout, "utf8");
+await writeFile(output, `${stdout.trimEnd()}\n`, "utf8");
 if (stderr.trim()) process.stderr.write(stderr);
 console.log(
   `Generated ${path.relative(root, output)} from ${projectArg ? "the linked cloud project" : "local Supabase"}.`,
