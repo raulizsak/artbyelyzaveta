@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { commissionSchema } from "@/lib/enquiries";
 import { sendShopNotification } from "@/lib/email/smtp2go";
+import { describeEmailFailure } from "@/lib/email/transport";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -108,12 +109,14 @@ export async function POST(request: Request) {
           notification_error: null,
         })
         .eq("id", created.id);
-    } catch {
+    } catch (notificationError) {
+      const notificationFailure = describeEmailFailure(notificationError);
+      console.error("Commission enquiry email failed:", notificationFailure);
       await supabase
         .from("commission_enquiries")
         .update({
           notification_status: "failed",
-          notification_error: "Provider delivery failed",
+          notification_error: notificationFailure,
         })
         .eq("id", created.id);
     }

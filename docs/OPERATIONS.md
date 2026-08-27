@@ -57,7 +57,7 @@ EMAIL_DELIVERY_MODE=live
 STORE_NOTIFICATION_EMAIL=hello@artbyelyzaveta.shop
 ```
 
-Configure `SMTP2GO_SMTP_HOST`, `SMTP2GO_SMTP_PORT`, `SMTP2GO_SMTP_USER`, `SMTP2GO_SMTP_PASSWORD`, and the verified `EMAIL_FROM` sender in Render before testing application email. Verify order confirmation, admin new order, tracking, delay, commission update, invoice, cancellation, refund, return, contact, and commission delivery. Supabase Auth SMTP is configured separately in Auth settings with the same SMTP user and verified sender/domain.
+Configure `SMTP2GO_SMTP_HOST`, `SMTP2GO_SMTP_PORT`, `SMTP2GO_SMTP_USER`, `SMTP2GO_SMTP_PASSWORD`, and the verified `EMAIL_FROM` sender in Render before testing application email. The Render web service uses SMTP2GO's implicit-TLS port `443`; this avoids the SMTP ports restricted on Render Free while keeping transport encryption enabled. Verify order confirmation, admin new order, tracking, delay, commission update, invoice, cancellation, refund, return, contact, and commission delivery. Supabase Auth SMTP is configured separately in Auth settings with the same SMTP user and verified sender/domain.
 
 An `email-outbox` Edge Function is deployed as a dormant, custom-authenticated fallback. It is not used by the current Render SMTP path and has no SMTP2GO API key configured.
 

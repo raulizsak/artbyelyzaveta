@@ -20,12 +20,13 @@ let transport: ReturnType<typeof nodemailer.createTransport> | null = null;
 
 function getTransport() {
   if (transport) return transport;
-  const port = Number.parseInt(process.env.SMTP2GO_SMTP_PORT ?? "2525", 10);
+  const port = Number.parseInt(process.env.SMTP2GO_SMTP_PORT ?? "443", 10);
+  const usesImplicitTls = [443, 465, 8465].includes(port);
   transport = nodemailer.createTransport({
     host: required("SMTP2GO_SMTP_HOST"),
-    port: Number.isFinite(port) ? port : 2525,
-    secure: port === 465,
-    requireTLS: port !== 465,
+    port: Number.isFinite(port) ? port : 443,
+    secure: usesImplicitTls,
+    requireTLS: !usesImplicitTls,
     auth: {
       user: required("SMTP2GO_SMTP_USER"),
       pass: required("SMTP2GO_SMTP_PASSWORD"),
@@ -36,6 +37,24 @@ function getTransport() {
     tls: { minVersion: "TLSv1.2" },
   });
   return transport;
+}
+
+export function describeEmailFailure(error: unknown) {
+  if (!error || typeof error !== "object") return "SMTP delivery failed";
+  const smtpError = error as {
+    code?: unknown;
+    command?: unknown;
+    responseCode?: unknown;
+  };
+  const details = [smtpError.code, smtpError.command, smtpError.responseCode]
+    .filter((value): value is string | number =>
+      ["string", "number"].includes(typeof value),
+    )
+    .map(String)
+    .slice(0, 3);
+  return details.length
+    ? `SMTP delivery failed (${details.join(" / ")})`
+    : "SMTP delivery failed";
 }
 
 export function assertTransactionalEmailConfigured() {

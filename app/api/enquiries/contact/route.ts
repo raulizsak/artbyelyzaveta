@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/enquiries";
 import { sendShopNotification } from "@/lib/email/smtp2go";
+import { describeEmailFailure } from "@/lib/email/transport";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -53,12 +54,14 @@ export async function POST(request: Request) {
           notification_error: null,
         })
         .eq("id", created.id);
-    } catch {
+    } catch (notificationError) {
+      const notificationFailure = describeEmailFailure(notificationError);
+      console.error("Contact enquiry email failed:", notificationFailure);
       await admin
         .from("contact_enquiries")
         .update({
           notification_status: "failed",
-          notification_error: "Provider delivery failed",
+          notification_error: notificationFailure,
         })
         .eq("id", created.id);
     }
