@@ -1,16 +1,16 @@
 # Rollback
 
-## Before production merge
+## Current demo release
 
-No rollback is needed for the live storefront because `main` remains unchanged. Continue using the existing Render production deployment. The implementation branch can be abandoned without deleting the Supabase project or cloud Convex data.
+The Supabase/demo-commerce cutover is developed and released directly from `main`. Record the ending release commit before deployment. The previous known-good baseline is `796903a`; prefer a normal forward revert commit or a Render redeploy of a known-good commit rather than rewriting history.
 
-## After a test-branch Render deployment
+## If the deployed demo release has a problem
 
-1. Disable `ENABLE_TEST_CHECKOUT` and keep `ENABLE_LIVE_CHECKOUT=false`.
-2. Point Render back to the last known-good commit/branch or redeploy that commit.
+1. Keep `ENABLE_TEST_CHECKOUT=false`, `ENABLE_LIVE_CHECKOUT=false`, and search indexing disabled.
+2. If order creation is suspect, temporarily change `PAYMENT_MODE` away from `demo` to disable checkout, then redeploy the last known-good commit or create a forward revert on `main`.
 3. Do not delete Supabase data; preserve it for diagnosis.
-4. Disable the Stripe test webhook endpoint if it is causing repeated failures.
-5. Keep SMTP delivery in test mode.
+4. Stripe is inactive in demo mode; do not enable or invoke it during rollback.
+5. If email delivery is causing retries, remove/rotate the SMTP2GO key or deploy with non-live email delivery while preserving queued outbox rows.
 
 ## After eventual production merge
 

@@ -3,16 +3,21 @@ import Link from "next/link";
 import { Check, Mail, Sparkles } from "lucide-react";
 import { ClearPurchasedCart } from "@/components/clear-purchased-cart";
 import { formatMoney } from "@/lib/catalog";
-import { getOrderForStripeSession } from "@/lib/orders/confirmation";
+import { getOrderForConfirmation } from "@/lib/orders/confirmation";
 
 export const metadata: Metadata = { title: "Order confirmation" };
 export default async function ConfirmationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ reference?: string; token?: string }>;
 }) {
-  const sessionId = (await searchParams).session_id;
-  const order = sessionId ? await getOrderForStripeSession(sessionId) : null;
+  const query = await searchParams;
+  const order = query.reference
+    ? await getOrderForConfirmation({
+        reference: query.reference,
+        token: query.token,
+      })
+    : null;
   return (
     <main className="confirmation-page shell" id="main-content">
       {!order ? (
@@ -34,15 +39,19 @@ export default async function ConfirmationPage({
             <Check aria-hidden="true" />
           </div>
           <p className="eyebrow">
-            {order.paymentStatus === "paid"
-              ? "Payment confirmed"
-              : "Payment processing"}
+            {order.isDemo
+              ? "Demo order confirmed"
+              : order.paymentStatus === "paid"
+                ? "Payment confirmed"
+                : "Payment processing"}
           </p>
           <h1>Thank you, {order.firstName}.</h1>
           <p className="confirmation-lede">
-            {order.paymentStatus === "paid"
-              ? "Your order is confirmed. Elyzaveta will contact you about the delivery arrangement."
-              : "Stripe has returned you safely. We are waiting for the signed payment confirmation before marking the artwork as sold."}
+            {order.isDemo
+              ? "Your demo order is confirmed. No payment was taken. Elyzaveta will contact you about the delivery arrangement."
+              : order.paymentStatus === "paid"
+                ? "Your order is confirmed. Elyzaveta will contact you about the delivery arrangement."
+                : "Stripe has returned you safely. We are waiting for the signed payment confirmation before marking the artwork as sold."}
           </p>
           <p className="order-reference">
             Order <strong>{order.reference}</strong> ·{" "}
@@ -53,7 +62,7 @@ export default async function ConfirmationPage({
               <Mail aria-hidden="true" />
               <p>
                 <strong>Confirmation email</strong>
-                <br />A receipt and private order link will be sent to{" "}
+                <br />A confirmation and private order link will be sent to{" "}
                 {order.email} after payment is confirmed.
               </p>
             </div>

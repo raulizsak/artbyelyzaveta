@@ -8,14 +8,17 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("buyer can browse, use a duplicate-safe bag and reach safe test checkout", async ({
+test("buyer can browse, use a duplicate-safe bag and reach safe demo checkout", async ({
   page,
 }) => {
   await page.goto("/shop");
   await expect(
     page.getByRole("heading", { name: "Original Paintings" }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "View Cows at Dusk" }).click();
+  await Promise.all([
+    page.waitForURL("**/shop/cows-at-dusk"),
+    page.getByRole("link", { name: "View Cows at Dusk" }).click(),
+  ]);
   await expect(
     page.getByRole("heading", { name: "Cows at Dusk", level: 1 }),
   ).toBeVisible();
@@ -52,11 +55,38 @@ test("buyer can browse, use a duplicate-safe bag and reach safe test checkout", 
   await page.getByLabel("Postcode").fill("3000");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
-    page.getByRole("heading", { name: "Secure card payment" }),
+    page.getByRole("heading", { name: "No payment will be taken" }),
   ).toBeVisible();
   await expect(page.locator('input[autocomplete^="cc-"]')).toHaveCount(0);
   await expect(
-    page.getByText(/Test checkout is safely disabled/),
+    page.getByText(/Demo checkout is currently disabled/),
+  ).toBeVisible();
+});
+
+test("coming-soon page signs up with duplicate-safe success copy", async ({
+  page,
+}) => {
+  await page.route("**/api/subscribers", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: '{"ok":true}',
+    }),
+  );
+  await page.goto("/");
+  await expect(page.getByText("Your new art shop")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Coming soon" }),
+  ).toBeVisible();
+  await expect(page.locator("header")).toHaveCount(0);
+  await page
+    .getByLabel("Sign up to know when we go live")
+    .fill("collector@example.test");
+  await page.getByRole("button", { name: "Sign up" }).click();
+  await expect(
+    page.getByText(
+      "You're on the list. We'll let you know when the shop goes live.",
+    ),
   ).toBeVisible();
 });
 

@@ -18,7 +18,7 @@ const headingViewports = viewports.filter(({ width }) =>
   [1440, 1280, 1024, 768, 430, 390, 375].includes(width),
 );
 
-test("shared hero scale is responsive across the required viewport matrix", async ({
+test("coming-soon launch is responsive across the required viewport matrix", async ({
   page,
 }, testInfo) => {
   test.setTimeout(90_000);
@@ -30,59 +30,31 @@ test("shared hero scale is responsive across the required viewport matrix", asyn
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await page.locator(".hero__lede:visible").first().waitFor();
-    await page.waitForFunction(() =>
-      [...document.querySelectorAll(".hero__lede")].some(
-        (element) => element.getBoundingClientRect().height > 0,
-      ),
-    );
+    await page.locator(".coming-soon h1:visible").waitFor();
 
     const layout = await page.evaluate(() => {
-      const visibleRect = (selector: string) =>
-        [...document.querySelectorAll(selector)]
-          .map((element) => element.getBoundingClientRect())
-          .find((rect) => rect.width > 0 && rect.height > 0);
-      const h1 = visibleRect(".hero h1");
-      const supporting = visibleRect(".hero__lede");
-      const hero = visibleRect(".hero");
-      const visibleHeading = [...document.querySelectorAll(".hero h1")].find(
-        (element) => element.getBoundingClientRect().height > 0,
-      )!;
-      const buttons = [...document.querySelectorAll(".hero .button-row a")]
-        .map((button) => button.getBoundingClientRect())
-        .filter((rect) => rect.width > 0 && rect.height > 0);
+      const heading = document.querySelector(".coming-soon h1")!;
+      const card = document.querySelector(".coming-soon__card")!;
+      const rect = card.getBoundingClientRect();
       return {
         overflow:
           document.documentElement.scrollWidth -
           document.documentElement.clientWidth,
-        fontSize: Number.parseFloat(getComputedStyle(visibleHeading).fontSize),
-        h1Bottom: h1?.bottom ?? 0,
-        supportingTop: supporting?.top ?? 0,
-        heroBottom: hero?.bottom ?? 0,
-        buttonTops: buttons.map((button) => button.top),
+        fontSize: Number.parseFloat(getComputedStyle(heading).fontSize),
+        cardLeft: rect.left,
+        cardRight: rect.right,
+        cardBottom: rect.bottom,
       };
     });
 
     expect(layout.overflow, `${viewport.width}px horizontal overflow`).toBe(0);
     expect(
-      layout.h1Bottom,
-      `${viewport.width}px heading/supporting overlap`,
-    ).toBeLessThan(layout.supportingTop);
-    expect(layout.fontSize).toBeGreaterThanOrEqual(40);
-    expect(layout.fontSize).toBeLessThanOrEqual(64);
-
-    if (viewport.width >= 1024) {
-      expect(
-        layout.heroBottom,
-        `${viewport.width}×${viewport.height} desktop hero below fold`,
-      ).toBeLessThanOrEqual(viewport.height + 2);
-    }
-    if (viewport.width >= 360) {
-      expect(
-        Math.abs(layout.buttonTops[0] - layout.buttonTops[1]),
-        `${viewport.width}px hero buttons stacked`,
-      ).toBeLessThan(2);
-    }
+      layout.cardLeft,
+      `${viewport.width}px card clipped on left`,
+    ).toBeGreaterThanOrEqual(0);
+    expect(layout.cardRight).toBeLessThanOrEqual(viewport.width + 1);
+    expect(layout.fontSize).toBeGreaterThanOrEqual(60);
+    expect(layout.fontSize).toBeLessThanOrEqual(120);
   }
 
   for (const viewport of headingViewports) {
@@ -120,7 +92,7 @@ test("logo paints on page load, replays on desktop hover and respects reduced mo
     testInfo.project.name !== "desktop-chromium",
     "Desktop hover behavior only applies to a fine pointer.",
   );
-  await page.goto("/");
+  await page.goto("/about");
   const logo = page.locator("header .brand-logo:visible").first();
   await expect(logo).toHaveClass(/brand-logo--animate/);
   await expect

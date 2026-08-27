@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CheckoutClient } from "@/components/checkout-client";
-import { isSupabaseConfigured, isTestCheckoutEnabled } from "@/lib/env";
+import { isDemoPaymentMode, isSupabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Checkout" };
@@ -16,7 +16,7 @@ export default async function CheckoutPage() {
     if (!user)
       return (
         <main className="checkout-page shell" id="main-content">
-          <CheckoutClient checkoutEnabled={isTestCheckoutEnabled()} />
+          <CheckoutClient checkoutEnabled={isDemoPaymentMode()} />
         </main>
       );
     const [{ data: profile }, { data: address }] = await Promise.all([
@@ -46,7 +46,7 @@ export default async function CheckoutPage() {
   return (
     <main className="checkout-page shell" id="main-content">
       <CheckoutClient
-        checkoutEnabled={isTestCheckoutEnabled()}
+        checkoutEnabled={isDemoPaymentMode()}
         initialDetails={initialDetails}
       />
     </main>

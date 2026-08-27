@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { commissionSchema } from "@/lib/enquiries";
+import { sendShopNotification } from "@/lib/email/smtp2go";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     const { data: created, error } = await supabase
       .from("commission_enquiries")
       .insert(enquiry)
-      .select("id")
+      .select("id, created_at")
       .single();
     if (error || !created) throw error ?? new Error("missing-enquiry");
     if (inspirationFiles.length) {
@@ -75,6 +76,46 @@ export async function POST(request: Request) {
           .eq("id", created.id);
         throw filesError;
       }
+    }
+    try {
+      const providerId = await sendShopNotification({
+        subject: `New commission enquiry — ${enquiry.subject}`,
+        heading: "New commission enquiry",
+        replyTo: enquiry.email,
+        rows: [
+          ["Name", enquiry.name],
+          ["Email", enquiry.email],
+          ["Phone", enquiry.phone],
+          ["Subject", enquiry.subject],
+          ["Dimensions", enquiry.dimensions],
+          ["Budget", enquiry.budget],
+          ["Timing", enquiry.timing],
+          ["Submitted", new Date(created.created_at).toLocaleString("en-AU")],
+          [
+            "Inspiration files",
+            inspirationFiles.length ? String(inspirationFiles.length) : "None",
+          ],
+          ["Additional notes", enquiry.notes],
+        ],
+        message: enquiry.inspiration,
+      });
+      await supabase
+        .from("commission_enquiries")
+        .update({
+          notification_status: "sent",
+          notification_sent_at: new Date().toISOString(),
+          notification_provider_id: providerId,
+          notification_error: null,
+        })
+        .eq("id", created.id);
+    } catch {
+      await supabase
+        .from("commission_enquiries")
+        .update({
+          notification_status: "failed",
+          notification_error: "Provider delivery failed",
+        })
+        .eq("id", created.id);
     }
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch {

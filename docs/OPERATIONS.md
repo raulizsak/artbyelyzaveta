@@ -4,8 +4,8 @@
 
 - Supabase project: `art-by-elyzaveta` (`fhxgcvdwvagqnxgydyca`), Sydney `ap-southeast-2`, Free.
 - Render: existing Free web service and `artbyelyzaveta.shop` domain.
-- Stripe: test mode only.
-- Email: existing SMTP2GO allowance, initially forced to a test recipient.
+- Payments: `PAYMENT_MODE=demo`; no card collection and no Stripe API calls. Stripe architecture is retained but inactive.
+- Email: live-recipient mode through the existing SMTP2GO account once its API/SMTP credentials are configured.
 - No paid branch, image transformation, hosting upgrade, or live payment is authorized.
 
 Supabase Free can pause after low activity. Do not add keepalive traffic to defeat that limit. Reassess plan, backups, and support before real commerce launch.
@@ -40,24 +40,26 @@ The seed contains only fictional `.example.test` users and addresses. A reset is
 
 Future artwork processing happens in the admin browser: validate source dimensions/size, create deterministic WebP variants, and upload directly to Storage. Render must not proxy multi-megabyte masters or transform them per request.
 
-## Stripe TEST mode
+## Demo commerce mode
 
-The application creates a server-priced reservation before a custom Checkout Session. The signed Edge Function webhook is authoritative for payment, sale, failure, expiry, setup intent, and refund state. `stripe_events` and per-request idempotency keys make replays safe.
+The current checkout calls the service-only `create_demo_order` RPC. It validates the painting and authoritative price, atomically reserves the one-of-one work, creates the real order/items/timeline/outbox records, marks the order paid and confirmed, and labels it `is_demo=true`. No Stripe Checkout Session, PaymentIntent, card form, or Stripe API call occurs.
 
-Deploy the webhook with JWT verification disabled only because Stripe cannot supply a Supabase JWT and the function verifies Stripe's signature itself. Configure only test keys during this phase. Never put addresses, phone numbers, or return explanations in Stripe metadata; only internal IDs are sent.
+Demo cancellation/refund uses the database-only demo RPC and can restock only when explicitly selected. `Reset demo order` is restricted to an AAL2 admin, preserves audit/order history, and restores the painting for repeat testing. The existing signed/idempotent Stripe webhook and checkout code remain dormant for a later separately approved activation.
 
-## Email outbox
+## Email delivery and outbox
 
-Application and webhook transactions insert deduplicated `email_outbox` rows. The `email-outbox` Edge Function claims a bounded batch atomically, renders the relevant customer/admin template, calls SMTP2GO, and records delivery state/provider ID.
+Application and webhook transactions insert deduplicated `email_outbox` rows. The Render server claims a bounded batch atomically, renders the relevant customer/admin template, sends through the existing SMTP2GO SMTP user with STARTTLS, and records delivery state/provider ID. Contact and commission notifications use the same SMTP transport after their enquiry rows are safely stored.
 
-Start with:
+For this controlled demo phase use:
 
 ```text
-EMAIL_DELIVERY_MODE=test
-EMAIL_TEST_RECIPIENT=<controlled test inbox>
+EMAIL_DELIVERY_MODE=live
+STORE_NOTIFICATION_EMAIL=hello@artbyelyzaveta.shop
 ```
 
-Verify order confirmation, admin new order, tracking, delay, commission update, invoice, cancellation, refund initiated/completed, and return templates before switching delivery mode. Supabase Auth SMTP must be configured separately in Auth settings with the same verified SMTP2GO sender/domain.
+Configure `SMTP2GO_SMTP_HOST`, `SMTP2GO_SMTP_PORT`, `SMTP2GO_SMTP_USER`, `SMTP2GO_SMTP_PASSWORD`, and the verified `EMAIL_FROM` sender in Render before testing application email. Verify order confirmation, admin new order, tracking, delay, commission update, invoice, cancellation, refund, return, contact, and commission delivery. Supabase Auth SMTP is configured separately in Auth settings with the same SMTP user and verified sender/domain.
+
+An `email-outbox` Edge Function is deployed as a dormant, custom-authenticated fallback. It is not used by the current Render SMTP path and has no SMTP2GO API key configured.
 
 ## Auth URLs
 
@@ -72,8 +74,9 @@ Password-reset links return to `/reset-password`. Recheck redirects after any do
 ## Order operations
 
 - Fulfillment, tracking, customer status, internal notes, commission stage/ETA, returns, cancellation, and refund actions require admin AAL2.
-- Paid cancellations issue a full Stripe test refund and wait for the signed webhook before reflecting success.
+- Demo cancellations/refunds never call Stripe; future real paid cancellations use the retained Stripe refund/webhook workflow.
 - Restocking a one-of-one painting happens only after a full successful refund and an explicit restock choice.
+- Only AAL2 admins can use `Reset demo order`, and only when `is_demo=true`.
 - Shipped/delivered purchases use the return workflow rather than cancellation.
 - Audit and timeline rows are append-only from the application.
 

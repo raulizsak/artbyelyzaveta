@@ -9,6 +9,7 @@ const schema = z.object({
   amountCents: z.number().int().positive(),
   reason: z.string().trim().min(3).max(500),
   idempotencyKey: z.uuid(),
+  restock: z.boolean().default(false),
 });
 export async function POST(
   request: Request,
@@ -28,14 +29,11 @@ export async function POST(
   const { data: order } = await admin
     .from("orders")
     .select(
-      "id, customer_email, stripe_payment_intent_id, total_cents, amount_refunded_cents, payment_status",
+      "id, customer_email, stripe_payment_intent_id, total_cents, amount_refunded_cents, payment_status, is_demo",
     )
     .eq("id", orderId)
     .maybeSingle();
-  if (
-    !order?.stripe_payment_intent_id ||
-    !["paid", "partially_refunded"].includes(order.payment_status)
-  )
+  if (!order || !["paid", "partially_refunded"].includes(order.payment_status))
     return NextResponse.json(
       { error: "Order is not refundable" },
       { status: 409 },
@@ -45,6 +43,30 @@ export async function POST(
     return NextResponse.json(
       { error: "Refund exceeds the remaining payment" },
       { status: 400 },
+    );
+  if (order.is_demo) {
+    const { error } = await admin.rpc("process_demo_refund", {
+      p_order_id: order.id,
+      p_amount_cents: parsed.data.amountCents,
+      p_reason: parsed.data.reason,
+      p_idempotency_key: parsed.data.idempotencyKey,
+      p_actor_user_id: user.id,
+      p_cancel_order: false,
+      p_restock: parsed.data.restock,
+      p_notify: true,
+    });
+    if (error)
+      return NextResponse.json(
+        { error: "The demo refund could not be recorded." },
+        { status: 409 },
+      );
+    await triggerEmailOutbox(order.id);
+    return NextResponse.json({ status: "succeeded", demo: true });
+  }
+  if (!order.stripe_payment_intent_id)
+    return NextResponse.json(
+      { error: "Order is not refundable" },
+      { status: 409 },
     );
   try {
     const refund = await getStripe().refunds.create(

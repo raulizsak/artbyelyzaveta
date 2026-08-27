@@ -38,7 +38,7 @@ export function SiteFooter() {
       </div>
       <div className="shell site-footer__base">
         <span>© {new Date().getFullYear()} Art by Elyzaveta</span>
-        <span>Melbourne, Australia · Secure checkout in Stripe TEST MODE</span>
+        <span>Melbourne, Australia · Demo checkout · No payment is taken</span>
       </div>
     </footer>
   );

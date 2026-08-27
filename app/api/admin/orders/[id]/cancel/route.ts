@@ -35,7 +35,7 @@ export async function POST(
   const { data: order } = await admin
     .from("orders")
     .select(
-      "id, customer_email, payment_status, fulfillment_status, total_cents, amount_refunded_cents, stripe_payment_intent_id, order_items(painting_id)",
+      "id, customer_email, payment_status, fulfillment_status, total_cents, amount_refunded_cents, stripe_payment_intent_id, is_demo, order_items(painting_id)",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -87,6 +87,25 @@ export async function POST(
   }
 
   const remaining = order.total_cents - order.amount_refunded_cents;
+  if (order.is_demo) {
+    const { error } = await admin.rpc("process_demo_refund", {
+      p_order_id: order.id,
+      p_amount_cents: remaining,
+      p_reason: parsed.data.reason,
+      p_idempotency_key: parsed.data.idempotencyKey,
+      p_actor_user_id: user.id,
+      p_cancel_order: true,
+      p_restock: parsed.data.restock,
+      p_notify: parsed.data.notify,
+    });
+    if (error)
+      return NextResponse.json(
+        { error: "The demo order could not be cancelled." },
+        { status: 409 },
+      );
+    if (parsed.data.notify) await triggerEmailOutbox(order.id);
+    return NextResponse.json({ status: "succeeded", demo: true });
+  }
   if (!order.stripe_payment_intent_id || remaining <= 0)
     return NextResponse.json(
       { error: "No refundable payment remains." },

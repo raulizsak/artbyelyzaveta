@@ -1,15 +1,15 @@
 # Art by Elyzaveta
 
-Production-oriented ecommerce for original paintings and commissions. The application uses Next.js 16 on Render, Supabase PostgreSQL/Auth/Storage, Stripe Checkout Sessions with the embedded Payment Element, and SMTP2GO transactional email.
+Production-oriented ecommerce for original paintings and commissions. The application uses Next.js 16 on Render, Supabase PostgreSQL/Auth/Storage, a no-charge demo checkout, and SMTP2GO transactional email.
 
-The migration is developed on `codex/supabase-commerce-migration`. Stripe remains in **TEST MODE**, search indexing remains disabled, and Render production `main` must not be changed until every go-live gate is approved.
+The Supabase cutover is on `main`. The public root is a premium coming-soon/signup page, while direct test routes remain available. `PAYMENT_MODE=demo` creates real, clearly labelled database orders without collecting card details or calling Stripe. Search indexing and live payments remain disabled.
 
 ## Architecture
 
 - Next.js App Router, React, TypeScript, and Tailwind CSS on Render
 - Supabase PostgreSQL with RLS, Auth with mandatory admin TOTP/AAL2, and Storage
-- Stripe custom checkout in test mode with signed, idempotent webhook processing
-- SMTP2GO delivery through the `email-outbox` Edge Function
+- No-charge demo checkout with transactional order creation, demo refund/reset, and retained Stripe architecture for later approval
+- SMTP2GO SMTP delivery from the Render server with a durable Supabase email outbox
 - Pre-generated WebP artwork variants; no paid runtime image transformations
 - Vitest, Playwright, and pgTAP security/commerce suites
 
@@ -37,10 +37,11 @@ Local Supabase uses ports `55430`–`55439` to avoid Windows-reserved `5432x` ra
 `.env.example` is authoritative. Important boundaries:
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are browser-safe.
-- `SUPABASE_SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SMTP2GO_API_KEY`, and `RATE_LIMIT_SECRET` are server-only.
-- `ENABLE_TEST_CHECKOUT` enables only Stripe test checkout.
+- `SUPABASE_SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SMTP2GO_SMTP_USER`, `SMTP2GO_SMTP_PASSWORD`, and `RATE_LIMIT_SECRET` are server-only.
+- `PAYMENT_MODE=demo` selects the current no-card, no-Stripe demo checkout.
+- `ENABLE_TEST_CHECKOUT` is retained for a future separately approved Stripe test activation.
 - `ENABLE_LIVE_CHECKOUT` must remain `false` until separate go-live approval.
-- `EMAIL_DELIVERY_MODE=test` redirects application email to `EMAIL_TEST_RECIPIENT`.
+- `EMAIL_DELIVERY_MODE=live` sends to the intended customer or `STORE_NOTIFICATION_EMAIL`; it requires valid SMTP2GO SMTP credentials.
 - `ENABLE_SEARCH_INDEXING=false` keeps the migration environment out of search results.
 
 Never commit `.env.local`, production exports, customer data, or private files.
@@ -68,7 +69,7 @@ npm run media:optimize
 npm run migrate:convex -- --export-dir=C:\path\to\unpacked-export
 ```
 
-Both scripts are dry-run-safe. The Convex script requires `--execute` plus Supabase server credentials before it can write. Raw exports must stay outside the repository. The cloud Convex deployment is retained temporarily for rollback, even after its runtime package and provider are removed from the application.
+Both scripts are dry-run-safe. The production import has completed and was count-verified; the command remains available for an idempotent recovery/import run with `--execute`. Raw exports stay outside the repository. The application no longer has a Convex runtime/package/source dependency, while the cloud Convex deployment is retained temporarily for rollback.
 
 ## Verification
 
@@ -86,6 +87,6 @@ The suites cover catalogue and input validation, direct RLS and storage access, 
 
 ## Deployment boundary
 
-Render production auto-deploys `main`. Push and test the implementation branch first. Do not merge until Supabase migration verification, Auth/SMTP, Edge Functions, Stripe TEST webhook, authenticated browser tests, advisors, and the production build are all green.
+Render production auto-deploys `main`. Keep `PAYMENT_MODE=demo`, both Stripe checkout flags false, and search indexing disabled until the separate production go-live approval. The remaining external gates are tracked explicitly in the go-live checklist.
 
 Operational detail is in [Operations](docs/OPERATIONS.md), [Migration report](docs/MIGRATION_REPORT.md), [Rollback](docs/ROLLBACK.md), and the [Production go-live checklist](docs/PRODUCTION_GO_LIVE_CHECKLIST.md).

@@ -8,6 +8,7 @@ const links = [
   ["Orders", "/admin/orders"],
   ["Paintings", "/admin/paintings"],
   ["Returns", "/admin/returns"],
+  ["Subscribers", "/admin/subscribers"],
 ];
 export default async function AdminLayout({
   children,

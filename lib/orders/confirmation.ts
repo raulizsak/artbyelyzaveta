@@ -1,7 +1,7 @@
 import "server-only";
 
-import { getStripe } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type ConfirmationOrder = {
   reference: string;
@@ -12,44 +12,65 @@ export type ConfirmationOrder = {
   totalCents: number;
   currency: string;
   deliveryMethod: string;
+  isDemo: boolean;
   item: { title: string; paintingSlug: string } | null;
 };
 
-export async function getOrderForStripeSession(
-  sessionId: string,
-): Promise<ConfirmationOrder | null> {
-  if (!sessionId.startsWith("cs_test_")) return null;
-  try {
-    const session = await getStripe().checkout.sessions.retrieve(sessionId);
-    const orderId = session.metadata?.order_id;
-    if (!orderId) return null;
-    const { data, error } = await createAdminClient()
+export async function getOrderForConfirmation({
+  reference,
+  token,
+}: {
+  reference: string;
+  token?: string;
+}): Promise<ConfirmationOrder | null> {
+  if (!/^ABE-[0-9]{4}-[A-F0-9]{10}$/.test(reference)) return null;
+  const admin = createAdminClient();
+  let orderId: string | null = null;
+
+  if (token && /^[a-f0-9]{64}$/i.test(token)) {
+    const result = await admin.rpc("lookup_guest_order", { p_token: token });
+    orderId = result.data ?? null;
+  } else {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+    const result = await admin
       .from("orders")
-      .select(
-        "order_reference, customer_first_name, customer_email, payment_status, fulfillment_status, total_cents, currency, delivery_method, stripe_checkout_session_id, order_items(title, painting_slug)",
-      )
-      .eq("id", orderId)
-      .eq("stripe_checkout_session_id", session.id)
+      .select("id")
+      .eq("order_reference", reference)
+      .eq("customer_user_id", user.id)
       .maybeSingle();
-    if (error || !data) return null;
-    const items = data.order_items as unknown as {
-      title: string;
-      painting_slug: string;
-    }[];
-    return {
-      reference: data.order_reference,
-      firstName: data.customer_first_name,
-      email: data.customer_email,
-      paymentStatus: data.payment_status,
-      fulfillmentStatus: data.fulfillment_status,
-      totalCents: data.total_cents,
-      currency: data.currency,
-      deliveryMethod: data.delivery_method,
-      item: items[0]
-        ? { title: items[0].title, paintingSlug: items[0].painting_slug }
-        : null,
-    };
-  } catch {
-    return null;
+    orderId = result.data?.id ?? null;
   }
+  if (!orderId) return null;
+
+  const { data, error } = await admin
+    .from("orders")
+    .select(
+      "order_reference, customer_first_name, customer_email, payment_status, fulfillment_status, total_cents, currency, delivery_method, is_demo, order_items(title, painting_slug)",
+    )
+    .eq("id", orderId)
+    .eq("order_reference", reference)
+    .maybeSingle();
+  if (error || !data) return null;
+  const items = data.order_items as unknown as {
+    title: string;
+    painting_slug: string;
+  }[];
+  return {
+    reference: data.order_reference,
+    firstName: data.customer_first_name,
+    email: data.customer_email,
+    paymentStatus: data.payment_status,
+    fulfillmentStatus: data.fulfillment_status,
+    totalCents: data.total_cents,
+    currency: data.currency,
+    deliveryMethod: data.delivery_method,
+    isDemo: data.is_demo,
+    item: items[0]
+      ? { title: items[0].title, paintingSlug: items[0].painting_slug }
+      : null,
+  };
 }

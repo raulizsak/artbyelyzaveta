@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import AnimatedStepper from "@/components/smoothui/animated-stepper";
 import { useCart } from "@/components/cart-provider";
-import { PaymentPanel } from "@/components/payment-panel";
+import { DemoPaymentPanel } from "@/components/demo-payment-panel";
 import { formatMoney, paintingDimensions } from "@/lib/catalog";
 
 type Details = {
@@ -139,10 +139,10 @@ export function CheckoutClient({
     <>
       <header className="checkout-header">
         <div>
-          <p className="eyebrow">Stripe TEST MODE</p>
+          <p className="eyebrow">Demo checkout</p>
           <h1>Checkout</h1>
         </div>
-        <p>Test cards only. Live payments remain disabled.</p>
+        <p>No payment will be taken.</p>
       </header>
       <AnimatedStepper
         className="checkout-stepper"
@@ -150,7 +150,7 @@ export function CheckoutClient({
         steps={[
           { label: "Your details", description: "Contact" },
           { label: "Delivery", description: "Arrangement" },
-          { label: "Review", description: "Payment" },
+          { label: "Review", description: "Demo order" },
         ]}
       />
       <div className="checkout-layout">
@@ -236,8 +236,8 @@ export function CheckoutClient({
                 <div>
                   <h2>Review</h2>
                   <p>
-                    Check your details before opening Stripe&apos;s secure
-                    payment form.
+                    Check your details before placing the demo order. No card
+                    details are needed and no payment will be taken.
                   </p>
                 </div>
               </div>
@@ -283,7 +283,7 @@ export function CheckoutClient({
                   </button>
                 </div>
               </div>
-              <PaymentPanel
+              <DemoPaymentPanel
                 amount={cart.subtotal}
                 currency={item.currency}
                 enabled={checkoutEnabled}

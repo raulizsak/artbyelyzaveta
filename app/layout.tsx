@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { Providers } from "@/components/providers";
+import { SiteChrome } from "@/components/site-chrome";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -50,12 +49,7 @@ export default function RootLayout({
     <html data-scroll-behavior="smooth" lang="en-AU">
       <body className={`${display.variable} ${sans.variable}`}>
         <Providers>
-          <a className="skip-link" href="#main-content">
-            Skip to content
-          </a>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
+          <SiteChrome>{children}</SiteChrome>
         </Providers>
       </body>
     </html>

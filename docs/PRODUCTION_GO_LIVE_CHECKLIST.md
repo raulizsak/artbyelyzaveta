@@ -12,11 +12,11 @@ Live Stripe payments remain out of scope until this checklist is reviewed and se
 
 ## Supabase
 
-- [ ] Production project remains in Lisa's organization, Sydney, with current migrations recorded and generated types refreshed.
-- [ ] Real Convex counts/files/timestamps/slugs are verified in Supabase; raw temporary export is securely removed when rollback retention no longer requires it.
-- [ ] All 66 pgTAP RLS/commerce/storage tests pass from a clean reset.
-- [ ] Security advisor has no unaccepted critical/error finding.
-- [ ] Performance advisor findings are fixed or documented with a concrete reason.
+- [x] Production project remains in Lisa's organization, Sydney, with current migrations applied and generated types refreshed.
+- [x] Real Convex counts/files/timestamps/slugs are verified in Supabase; raw temporary export remains outside Git and can be securely removed when rollback retention no longer requires it.
+- [x] All 82 pgTAP RLS/commerce/storage/demo-commerce tests pass from a clean reset.
+- [x] Security advisor has no unaccepted critical/error finding; the one warning is the Pro-only leaked-password feature while the project intentionally remains Free.
+- [x] Performance advisor has 0 errors/warnings; 28 unused-index info findings are documented and retained until real query statistics exist.
 - [ ] Decide whether Free pausing, quotas, support, and lack of production-grade backups are acceptable; select a paid plan only after approval.
 - [ ] Establish a tested database backup/export and restore procedure before accepting money.
 
@@ -31,6 +31,8 @@ Live Stripe payments remain out of scope until this checklist is reviewed and se
 
 ## Stripe and orders
 
+- [x] Current deployment is explicitly `PAYMENT_MODE=demo`; it collects no card details and makes no Stripe API/payment/refund call.
+- [x] Demo orders, refunds/cancellations, timeline events, email outbox entries, `DEMO` labels, and AAL2-only reset are database-backed.
 - [ ] All Stripe test keys/webhook secrets are removed or clearly separated from live configuration.
 - [ ] Create the live webhook only after approval, with the exact required events and HTTPS Edge Function URL.
 - [ ] Run live-mode configuration checks without making a real charge until an approved low-value end-to-end transaction plan exists.
@@ -47,10 +49,11 @@ Live Stripe payments remain out of scope until this checklist is reviewed and se
 
 ## Email
 
-- [ ] SMTP2GO sender/domain is verified for the final domain.
+- [x] SMTP2GO credentials authenticate and the final-domain sender delivered a real test message accepted for `hello@artbyelyzaveta.shop`.
+- [x] Render SMTP2GO SMTP variables and Supabase Auth custom SMTP credentials are configured; none are committed.
 - [ ] Test-recipient mode proves order confirmation, admin order, tracking, delay, commission, invoice, cancellation, refund, and return templates.
 - [ ] Idempotency prevents duplicate customer/admin messages under webhook retries.
-- [ ] Switch application email to production delivery only after approval and a monitored test order.
+- [ ] Confirm application live-recipient delivery with a monitored demo order before any public launch.
 
 ## Store operations and legal
 
@@ -66,4 +69,4 @@ Live Stripe payments remain out of scope until this checklist is reviewed and se
 - [ ] Ending commit is pushed and reviewed; worktree is clean.
 - [ ] Exact rollback commit and operator are recorded.
 - [ ] Costs are confirmed before any plan change.
-- [ ] Explicit approval is given to merge `main` and enable live payments.
+- [ ] Explicit approval is given to enable live payments. The demo release already deploys from `main` behind the coming-soon homepage.

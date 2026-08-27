@@ -30,7 +30,7 @@ export default async function Page({
   let query = supabase
     .from("orders")
     .select(
-      "order_reference, created_at, customer_first_name, customer_last_name, customer_email, total_cents, currency, payment_status, fulfillment_status, order_status, order_type, commission_eta, order_items(title)",
+      "order_reference, created_at, customer_first_name, customer_last_name, customer_email, total_cents, currency, payment_status, fulfillment_status, order_status, order_type, commission_eta, is_demo, order_items(title)",
       { count: "exact" },
     );
   if (search)
@@ -107,7 +107,12 @@ export default async function Page({
               key={order.order_reference}
             >
               <span>
-                <strong>{order.order_reference}</strong>
+                <strong>
+                  {order.order_reference}{" "}
+                  {order.is_demo ? (
+                    <span className="demo-badge">DEMO</span>
+                  ) : null}
+                </strong>
                 <small>
                   {new Intl.DateTimeFormat("en-AU", {
                     dateStyle: "medium",

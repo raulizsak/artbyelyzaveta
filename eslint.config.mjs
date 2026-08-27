@@ -6,7 +6,8 @@ export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
   globalIgnores([
-    "convex/_generated",
+    "playwright-report/**",
+    "test-results/**",
     "supabase/.temp/**",
     "supabase/functions/**",
   ]),

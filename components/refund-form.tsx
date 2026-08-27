@@ -8,15 +8,18 @@ export function RefundForm({
   orderId,
   total,
   amountRefunded,
+  isDemo,
 }: {
   orderId: string;
   total: number;
   amountRefunded: number;
+  isDemo: boolean;
 }) {
   const router = useRouter();
   const remaining = total - amountRefunded;
   const [amount, setAmount] = useState((remaining / 100).toFixed(2));
   const [reason, setReason] = useState("");
+  const [restock, setRestock] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">(
     "idle",
   );
@@ -30,6 +33,7 @@ export function RefundForm({
         amountCents: Math.round(Number(amount) * 100),
         reason,
         idempotencyKey: crypto.randomUUID(),
+        restock,
       }),
     });
     setState(response.ok ? "sent" : "error");
@@ -60,22 +64,39 @@ export function RefundForm({
           value={reason}
         />
       </label>
+      {isDemo ? (
+        <label className="consent-field">
+          <input
+            checked={restock}
+            onChange={(event) => setRestock(event.target.checked)}
+            type="checkbox"
+          />
+          <span>Return the artwork to available after a full refund</span>
+        </label>
+      ) : null}
       <button
         className="secondary-action"
         disabled={state === "busy" || remaining <= 0}
         type="submit"
       >
-        {state === "busy" ? "Submitting to Stripe…" : "Refund in TEST MODE"}
+        {state === "busy"
+          ? "Submitting…"
+          : isDemo
+            ? "Record demo refund"
+            : "Refund in TEST MODE"}
       </button>
       {state === "sent" ? (
         <p className="form-success-inline">
-          Refund submitted; the signed webhook will finalize its status.
+          {isDemo
+            ? "Demo refund recorded. No payment provider was contacted."
+            : "Refund submitted; the signed webhook will finalize its status."}
         </p>
       ) : null}
       {state === "error" ? (
         <p className="form-error">
-          Stripe did not accept the refund. Database state was not marked
-          successful.
+          {isDemo
+            ? "The demo refund could not be recorded."
+            : "Stripe did not accept the refund. Database state was not marked successful."}
         </p>
       ) : null}
     </form>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/enquiries";
+import { sendShopNotification } from "@/lib/email/smtp2go";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -23,10 +24,44 @@ export async function POST(request: Request) {
         { error: "Please review the required fields." },
         { status: 400 },
       );
-    const { error } = await createAdminClient()
+    const admin = createAdminClient();
+    const { data: created, error } = await admin
       .from("contact_enquiries")
-      .insert(parsed.data);
-    if (error) throw error;
+      .insert(parsed.data)
+      .select("id, created_at")
+      .single();
+    if (error || !created) throw error ?? new Error("missing-enquiry");
+    try {
+      const providerId = await sendShopNotification({
+        subject: `New contact enquiry — ${parsed.data.subject}`,
+        heading: "New contact enquiry",
+        replyTo: parsed.data.email,
+        rows: [
+          ["Name", parsed.data.name],
+          ["Email", parsed.data.email],
+          ["Subject", parsed.data.subject],
+          ["Submitted", new Date(created.created_at).toLocaleString("en-AU")],
+        ],
+        message: parsed.data.message,
+      });
+      await admin
+        .from("contact_enquiries")
+        .update({
+          notification_status: "sent",
+          notification_sent_at: new Date().toISOString(),
+          notification_provider_id: providerId,
+          notification_error: null,
+        })
+        .eq("id", created.id);
+    } catch {
+      await admin
+        .from("contact_enquiries")
+        .update({
+          notification_status: "failed",
+          notification_error: "Provider delivery failed",
+        })
+        .eq("id", created.id);
+    }
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch {
     return NextResponse.json(

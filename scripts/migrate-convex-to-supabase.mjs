@@ -221,7 +221,19 @@ for (const commission of commissions) {
     const metadata = storageById.get(file.storageId);
     if (!metadata)
       throw new Error("Commission storage metadata was not found.");
-    const localPath = path.join(exportDir, "_storage", file.storageId);
+    const localExtension =
+      metadata.contentType === "image/png"
+        ? "png"
+        : metadata.contentType === "image/webp"
+          ? "webp"
+          : metadata.contentType === "image/jpeg"
+            ? "jpeg"
+            : "";
+    const localPath = path.join(
+      exportDir,
+      "_storage",
+      `${file.storageId}${localExtension ? `.${localExtension}` : ""}`,
+    );
     const extension =
       metadata.contentType === "image/png"
         ? "png"

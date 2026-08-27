@@ -33,3 +33,5 @@ export const isLiveCheckoutEnabled = () =>
 
 export const isTestCheckoutEnabled = () =>
   process.env.ENABLE_TEST_CHECKOUT === "true" && isStripeTestConfigured();
+
+export const isDemoPaymentMode = () => process.env.PAYMENT_MODE === "demo";

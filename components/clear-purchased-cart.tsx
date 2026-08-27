@@ -8,7 +8,7 @@ export function ClearPurchasedCart() {
   useEffect(() => {
     window.sessionStorage.removeItem("art-by-elyzaveta-checkout");
     cart.clear();
-    // Clearing occurs once after Stripe returns to a verified session page.
+    // Clearing occurs once after a verified order confirmation page loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;

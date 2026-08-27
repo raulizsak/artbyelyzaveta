@@ -9,10 +9,12 @@ export function AdminOrderActions({
   initial,
   paymentStatus,
   orderType,
+  isDemo,
 }: {
   orderId: string;
   paymentStatus: string;
   orderType: string;
+  isDemo: boolean;
   initial: {
     fulfillmentStatus: string;
     orderStatus: string;
@@ -66,6 +68,20 @@ export function AdminOrderActions({
       setCancelOpen(false);
       router.refresh();
     }
+  }
+  async function resetDemoOrder() {
+    if (
+      !window.confirm(
+        "Reset this demo order and restore the painting? The audit history will be preserved.",
+      )
+    )
+      return;
+    setState("busy");
+    const response = await fetch(`/api/admin/orders/${orderId}/reset-demo`, {
+      method: "POST",
+    });
+    setState(response.ok ? "saved" : "error");
+    if (response.ok) router.refresh();
   }
   const paid = ["paid", "partially_refunded"].includes(paymentStatus);
   const shipped = ["shipped", "delivered"].includes(form.fulfillmentStatus);
@@ -197,6 +213,16 @@ export function AdminOrderActions({
         >
           Cancel order
         </button>
+        {isDemo ? (
+          <button
+            className="secondary-action"
+            disabled={state === "busy"}
+            onClick={resetDemoOrder}
+            type="button"
+          >
+            Reset demo order
+          </button>
+        ) : null}
       </div>
       {shipped ? (
         <p className="form-help">
@@ -221,7 +247,9 @@ export function AdminOrderActions({
         <form className="refund-form" onSubmit={cancelOrder}>
           <p>
             {paid
-              ? "The remaining payment will be refunded through Stripe. The order changes only after Stripe confirms the refund by signed webhook."
+              ? isDemo
+                ? "The remaining demo amount will be recorded as refunded immediately. No payment provider is contacted."
+                : "The remaining payment will be refunded through Stripe. The order changes only after Stripe confirms the refund by signed webhook."
               : "The unpaid reservation will be released immediately."}
           </p>
           <label className="form-field">
@@ -273,7 +301,9 @@ export function AdminOrderActions({
               {cancelState === "busy"
                 ? "Submitting…"
                 : paid
-                  ? "Confirm full refund"
+                  ? isDemo
+                    ? "Confirm demo refund"
+                    : "Confirm full refund"
                   : "Confirm cancellation"}
             </button>
             <button

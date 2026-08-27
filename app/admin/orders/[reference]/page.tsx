@@ -44,7 +44,10 @@ export default async function Page({
       <div className="section-heading">
         <div>
           <p className="eyebrow">{order.order_type} order</p>
-          <h1>{order.order_reference}</h1>
+          <h1>
+            {order.order_reference}{" "}
+            {order.is_demo ? <span className="demo-badge">DEMO</span> : null}
+          </h1>
         </div>
         <div className="status-row">
           <span>{order.payment_status}</span>
@@ -108,6 +111,7 @@ export default async function Page({
         orderId={order.id}
         orderType={order.order_type}
         paymentStatus={order.payment_status}
+        isDemo={order.is_demo}
       />
       <div className="detail-grid">
         <section>
@@ -146,6 +150,7 @@ export default async function Page({
               amountRefunded={order.amount_refunded_cents}
               orderId={order.id}
               total={order.total_cents}
+              isDemo={order.is_demo}
             />
           ) : (
             <p>Refund actions become available after a confirmed payment.</p>
