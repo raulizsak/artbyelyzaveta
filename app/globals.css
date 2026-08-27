@@ -2117,7 +2117,7 @@ blockquote {
   margin-bottom: 3rem;
 }
 .not-found h1 {
-  font-size: clamp(4rem, 9vw, 9rem);
+  font-size: clamp(3rem, 6vw, 6rem);
   font-weight: 500;
   letter-spacing: -0.055em;
   line-height: 0.84;
@@ -2910,7 +2910,7 @@ blockquote {
     gap: 0.5rem;
   }
   .not-found h1 {
-    font-size: clamp(3.8rem, 19vw, 6rem);
+    font-size: clamp(3rem, 13vw, 4.5rem);
   }
 }
 

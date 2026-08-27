@@ -9,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const paintings = await getPaintings();
   const staticRoutes = [
     "",
+    "/home",
     "/shop",
     "/about",
     "/commissions",

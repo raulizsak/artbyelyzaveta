@@ -37,9 +37,9 @@ export function BrandLogo({ className, compact = false }: BrandLogoProps) {
         isAnimating && "brand-logo--animate",
         className,
       )}
-      href="/"
+      href="/home"
       onClick={(event) => {
-        if (window.location.pathname === "/") {
+        if (window.location.pathname === "/home") {
           event.preventDefault();
           window.scrollTo({ top: 0, behavior: "smooth" });
         }

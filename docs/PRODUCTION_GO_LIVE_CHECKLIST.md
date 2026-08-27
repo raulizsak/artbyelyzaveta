@@ -22,9 +22,9 @@ Live Stripe payments remain out of scope until this checklist is reviewed and se
 
 ## Authentication and admin
 
-- [ ] Production Site URL and redirect allowlist use the final HTTPS domain.
+- [x] Production Site URL and redirect allowlist use the final HTTPS domain.
 - [ ] SMTP2GO is configured for Supabase Auth; signup verification and password reset arrive correctly.
-- [ ] Lisa's verified user ID is assigned the protected admin role.
+- [x] Lisa's verified user ID is assigned the protected admin role.
 - [ ] Lisa enrolls and verifies primary and backup TOTP factors.
 - [ ] Customer denial, admin AAL1 denial, and admin AAL2 workflows are manually verified.
 - [ ] Signup, verification, login, logout, reset, session persistence, protected account, and protected admin browser tests pass.

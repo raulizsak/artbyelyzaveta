@@ -2,7 +2,7 @@
 
 Production-oriented ecommerce for original paintings and commissions. The application uses Next.js 16 on Render, Supabase PostgreSQL/Auth/Storage, a no-charge demo checkout, and SMTP2GO transactional email.
 
-The Supabase cutover is on `main`. The public root is a premium coming-soon/signup page, while direct test routes remain available. `PAYMENT_MODE=demo` creates real, clearly labelled database orders without collecting card details or calling Stripe. Search indexing and live payments remain disabled.
+The Supabase cutover is on `main`. The public root is a premium coming-soon/signup page, while the full storefront home is directly testable at `/home` and the other test routes remain available. `PAYMENT_MODE=demo` creates real, clearly labelled database orders without collecting card details or calling Stripe. Search indexing and live payments remain disabled.
 
 ## Architecture
 

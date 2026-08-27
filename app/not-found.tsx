@@ -14,7 +14,7 @@ export default function NotFound() {
         <Link className="cta-link" href="/shop">
           View original paintings
         </Link>
-        <Link className="secondary-action" href="/">
+        <Link className="secondary-action" href="/home">
           Return home
         </Link>
       </div>
