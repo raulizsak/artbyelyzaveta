@@ -242,6 +242,203 @@ export type Database = {
         };
         Relationships: [];
       };
+      discount_products: {
+        Row: {
+          created_at: string;
+          discount_id: string;
+          painting_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          discount_id: string;
+          painting_id: string;
+        };
+        Update: {
+          created_at?: string;
+          discount_id?: string;
+          painting_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discount_products_discount_id_fkey";
+            columns: ["discount_id"];
+            isOneToOne: false;
+            referencedRelation: "discounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discount_products_painting_id_fkey";
+            columns: ["painting_id"];
+            isOneToOne: false;
+            referencedRelation: "paintings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      discount_redemptions: {
+        Row: {
+          confirmed_at: string | null;
+          created_at: string;
+          customer_limited: boolean;
+          discount_id: string;
+          id: string;
+          normalized_email: string;
+          order_id: string;
+          released_at: string | null;
+          reserved_until: string;
+          status: string;
+        };
+        Insert: {
+          confirmed_at?: string | null;
+          created_at?: string;
+          customer_limited?: boolean;
+          discount_id: string;
+          id?: string;
+          normalized_email: string;
+          order_id: string;
+          released_at?: string | null;
+          reserved_until: string;
+          status?: string;
+        };
+        Update: {
+          confirmed_at?: string | null;
+          created_at?: string;
+          customer_limited?: boolean;
+          discount_id?: string;
+          id?: string;
+          normalized_email?: string;
+          order_id?: string;
+          released_at?: string | null;
+          reserved_until?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discount_redemptions_discount_id_fkey";
+            columns: ["discount_id"];
+            isOneToOne: false;
+            referencedRelation: "discounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discount_redemptions_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      discount_stripe_catalog: {
+        Row: {
+          created_at: string;
+          discount_id: string;
+          id: string;
+          last_synced_at: string | null;
+          mode: string;
+          stripe_coupon_id: string | null;
+          stripe_promotion_code_id: string | null;
+          sync_error: string | null;
+          sync_status: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          discount_id: string;
+          id?: string;
+          last_synced_at?: string | null;
+          mode: string;
+          stripe_coupon_id?: string | null;
+          stripe_promotion_code_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: string;
+          updated_at?: string;
+          version: number;
+        };
+        Update: {
+          created_at?: string;
+          discount_id?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          mode?: string;
+          stripe_coupon_id?: string | null;
+          stripe_promotion_code_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discount_stripe_catalog_discount_id_fkey";
+            columns: ["discount_id"];
+            isOneToOne: false;
+            referencedRelation: "discounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      discounts: {
+        Row: {
+          active: boolean;
+          amount_off_cents: number | null;
+          applies_to: string;
+          archived_at: string | null;
+          code: string;
+          combinable: boolean;
+          created_at: string;
+          discount_type: string;
+          ends_at: string | null;
+          id: string;
+          max_redemptions: number | null;
+          minimum_subtotal_cents: number | null;
+          one_use_per_customer: boolean;
+          percent_off: number | null;
+          starts_at: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          active?: boolean;
+          amount_off_cents?: number | null;
+          applies_to?: string;
+          archived_at?: string | null;
+          code: string;
+          combinable?: boolean;
+          created_at?: string;
+          discount_type: string;
+          ends_at?: string | null;
+          id?: string;
+          max_redemptions?: number | null;
+          minimum_subtotal_cents?: number | null;
+          one_use_per_customer?: boolean;
+          percent_off?: number | null;
+          starts_at?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          active?: boolean;
+          amount_off_cents?: number | null;
+          applies_to?: string;
+          archived_at?: string | null;
+          code?: string;
+          combinable?: boolean;
+          created_at?: string;
+          discount_type?: string;
+          ends_at?: string | null;
+          id?: string;
+          max_redemptions?: number | null;
+          minimum_subtotal_cents?: number | null;
+          one_use_per_customer?: boolean;
+          percent_off?: number | null;
+          starts_at?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [];
+      };
       email_outbox: {
         Row: {
           attempts: number;
@@ -339,12 +536,67 @@ export type Database = {
           },
         ];
       };
+      order_discounts: {
+        Row: {
+          applied_cents: number;
+          code: string;
+          configured_amount_cents: number | null;
+          created_at: string;
+          discount_id: string | null;
+          discount_type: string;
+          id: string;
+          order_id: string;
+          percent_off: number | null;
+          stripe_coupon_id: string | null;
+        };
+        Insert: {
+          applied_cents: number;
+          code: string;
+          configured_amount_cents?: number | null;
+          created_at?: string;
+          discount_id?: string | null;
+          discount_type: string;
+          id?: string;
+          order_id: string;
+          percent_off?: number | null;
+          stripe_coupon_id?: string | null;
+        };
+        Update: {
+          applied_cents?: number;
+          code?: string;
+          configured_amount_cents?: number | null;
+          created_at?: string;
+          discount_id?: string | null;
+          discount_type?: string;
+          id?: string;
+          order_id?: string;
+          percent_off?: number | null;
+          stripe_coupon_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "order_discounts_discount_id_fkey";
+            columns: ["discount_id"];
+            isOneToOne: false;
+            referencedRelation: "discounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_discounts_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       order_events: {
         Row: {
           actor_type: string;
           actor_user_id: string | null;
           created_at: string;
           customer_safe_description: string;
+          dedupe_key: string | null;
           event_type: string;
           id: string;
           internal_metadata: Json;
@@ -356,6 +608,7 @@ export type Database = {
           actor_user_id?: string | null;
           created_at?: string;
           customer_safe_description: string;
+          dedupe_key?: string | null;
           event_type: string;
           id?: string;
           internal_metadata?: Json;
@@ -367,6 +620,7 @@ export type Database = {
           actor_user_id?: string | null;
           created_at?: string;
           customer_safe_description?: string;
+          dedupe_key?: string | null;
           event_type?: string;
           id?: string;
           internal_metadata?: Json;
@@ -445,6 +699,7 @@ export type Database = {
       };
       orders: {
         Row: {
+          amount_paid_cents: number | null;
           amount_refunded_cents: number;
           billing_address: Json | null;
           cancelled_at: string | null;
@@ -459,8 +714,11 @@ export type Database = {
           customer_status_message: string | null;
           customer_user_id: string | null;
           delivered_at: string | null;
+          delivered_email_queued_at: string | null;
+          delivered_email_sent_at: string | null;
           delivery_method: string;
           delivery_notes: string | null;
+          discount_cents: number;
           expected_dispatch: string | null;
           fulfillment_status: string;
           guest_access_expires_at: string | null;
@@ -468,6 +726,9 @@ export type Database = {
           id: string;
           internal_admin_notes: string | null;
           is_demo: boolean;
+          last_tracking_check_at: string | null;
+          latest_tracking_event: Json | null;
+          next_tracking_check_at: string | null;
           normalized_email: string | null;
           order_reference: string;
           order_status: string;
@@ -482,16 +743,22 @@ export type Database = {
           shipping_method: string | null;
           stripe_checkout_session_id: string | null;
           stripe_customer_id: string | null;
+          stripe_discount_coupon_id: string | null;
+          stripe_mode: string | null;
           stripe_payment_intent_id: string | null;
           subtotal_cents: number;
           tax_cents: number;
           total_cents: number;
           tracking_carrier: string | null;
+          tracking_error: string | null;
           tracking_number: string | null;
+          tracking_retry_count: number;
+          tracking_status: string | null;
           tracking_url: string | null;
           updated_at: string;
         };
         Insert: {
+          amount_paid_cents?: number | null;
           amount_refunded_cents?: number;
           billing_address?: Json | null;
           cancelled_at?: string | null;
@@ -506,8 +773,11 @@ export type Database = {
           customer_status_message?: string | null;
           customer_user_id?: string | null;
           delivered_at?: string | null;
+          delivered_email_queued_at?: string | null;
+          delivered_email_sent_at?: string | null;
           delivery_method?: string;
           delivery_notes?: string | null;
+          discount_cents?: number;
           expected_dispatch?: string | null;
           fulfillment_status?: string;
           guest_access_expires_at?: string | null;
@@ -515,6 +785,9 @@ export type Database = {
           id?: string;
           internal_admin_notes?: string | null;
           is_demo?: boolean;
+          last_tracking_check_at?: string | null;
+          latest_tracking_event?: Json | null;
+          next_tracking_check_at?: string | null;
           normalized_email?: string | null;
           order_reference: string;
           order_status?: string;
@@ -529,16 +802,22 @@ export type Database = {
           shipping_method?: string | null;
           stripe_checkout_session_id?: string | null;
           stripe_customer_id?: string | null;
+          stripe_discount_coupon_id?: string | null;
+          stripe_mode?: string | null;
           stripe_payment_intent_id?: string | null;
           subtotal_cents: number;
           tax_cents?: number;
           total_cents: number;
           tracking_carrier?: string | null;
+          tracking_error?: string | null;
           tracking_number?: string | null;
+          tracking_retry_count?: number;
+          tracking_status?: string | null;
           tracking_url?: string | null;
           updated_at?: string;
         };
         Update: {
+          amount_paid_cents?: number | null;
           amount_refunded_cents?: number;
           billing_address?: Json | null;
           cancelled_at?: string | null;
@@ -553,8 +832,11 @@ export type Database = {
           customer_status_message?: string | null;
           customer_user_id?: string | null;
           delivered_at?: string | null;
+          delivered_email_queued_at?: string | null;
+          delivered_email_sent_at?: string | null;
           delivery_method?: string;
           delivery_notes?: string | null;
+          discount_cents?: number;
           expected_dispatch?: string | null;
           fulfillment_status?: string;
           guest_access_expires_at?: string | null;
@@ -562,6 +844,9 @@ export type Database = {
           id?: string;
           internal_admin_notes?: string | null;
           is_demo?: boolean;
+          last_tracking_check_at?: string | null;
+          latest_tracking_event?: Json | null;
+          next_tracking_check_at?: string | null;
           normalized_email?: string | null;
           order_reference?: string;
           order_status?: string;
@@ -576,16 +861,74 @@ export type Database = {
           shipping_method?: string | null;
           stripe_checkout_session_id?: string | null;
           stripe_customer_id?: string | null;
+          stripe_discount_coupon_id?: string | null;
+          stripe_mode?: string | null;
           stripe_payment_intent_id?: string | null;
           subtotal_cents?: number;
           tax_cents?: number;
           total_cents?: number;
           tracking_carrier?: string | null;
+          tracking_error?: string | null;
           tracking_number?: string | null;
+          tracking_retry_count?: number;
+          tracking_status?: string | null;
           tracking_url?: string | null;
           updated_at?: string;
         };
         Relationships: [];
+      };
+      painting_stripe_catalog: {
+        Row: {
+          created_at: string;
+          id: string;
+          last_synced_at: string | null;
+          mode: string;
+          painting_id: string;
+          stripe_price_id: string | null;
+          stripe_product_id: string | null;
+          sync_error: string | null;
+          sync_status: string;
+          synced_currency: string | null;
+          synced_price_cents: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          mode: string;
+          painting_id: string;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: string;
+          synced_currency?: string | null;
+          synced_price_cents?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          mode?: string;
+          painting_id?: string;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: string;
+          synced_currency?: string | null;
+          synced_price_cents?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "painting_stripe_catalog_painting_id_fkey";
+            columns: ["painting_id"];
+            isOneToOne: false;
+            referencedRelation: "paintings";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       painting_media: {
         Row: {
@@ -657,6 +1000,7 @@ export type Database = {
           medium: string | null;
           orientation: string | null;
           price_cents: number;
+          shipping_cents: number;
           published_at: string | null;
           ready_to_hang: boolean;
           reserved_order_id: string | null;
@@ -689,6 +1033,7 @@ export type Database = {
           medium?: string | null;
           orientation?: string | null;
           price_cents: number;
+          shipping_cents?: number;
           published_at?: string | null;
           ready_to_hang?: boolean;
           reserved_order_id?: string | null;
@@ -721,6 +1066,7 @@ export type Database = {
           medium?: string | null;
           orientation?: string | null;
           price_cents?: number;
+          shipping_cents?: number;
           published_at?: string | null;
           ready_to_hang?: boolean;
           reserved_order_id?: string | null;
@@ -1050,6 +1396,41 @@ export type Database = {
           is_admin: boolean;
         }[];
       };
+      admin_mark_order_delivered: {
+        Args: {
+          p_latest_event?: Json;
+          p_order_id: string;
+          p_tracking_status?: string;
+        };
+        Returns: Json;
+      };
+      admin_archive_discount: {
+        Args: { p_discount_id: string };
+        Returns: undefined;
+      };
+      admin_reorder_painting_media: {
+        Args: { p_group_keys: string[]; p_painting_id: string };
+        Returns: undefined;
+      };
+      admin_save_discount: {
+        Args: {
+          p_active: boolean;
+          p_amount_off_cents: number | null;
+          p_applies_to: string;
+          p_code: string;
+          p_combinable: boolean;
+          p_discount_id: string | null;
+          p_discount_type: string;
+          p_ends_at: string | null;
+          p_max_redemptions: number | null;
+          p_minimum_subtotal_cents: number | null;
+          p_one_use_per_customer: boolean;
+          p_painting_ids: string[];
+          p_percent_off: number | null;
+          p_starts_at: string;
+        };
+        Returns: Json;
+      };
       admin_update_commission: {
         Args: {
           p_customer_message: string;
@@ -1212,6 +1593,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      attach_commerce_checkout_session: {
+        Args: {
+          p_discount_coupon_id?: string;
+          p_mode: string;
+          p_order_id: string;
+          p_payment_intent_id?: string;
+          p_session_id: string;
+          p_stripe_customer_id?: string;
+        };
+        Returns: undefined;
+      };
       claim_email_outbox: {
         Args: { p_limit?: number; p_order_id?: string };
         Returns: {
@@ -1258,6 +1650,35 @@ export type Database = {
           order_id: string;
           order_reference: string;
           reservation_expires_at: string;
+          total_cents: number;
+        }[];
+      };
+      create_commerce_checkout: {
+        Args: {
+          p_customer_email: string;
+          p_customer_first_name: string;
+          p_customer_last_name: string;
+          p_customer_phone: string;
+          p_customer_user_id: string;
+          p_delivery_method: string;
+          p_delivery_notes: string;
+          p_discount_codes?: string[];
+          p_painting_ids: string[];
+          p_reservation_minutes?: number;
+          p_shipping_address: Json;
+        };
+        Returns: {
+          currency: string;
+          discount_cents: number;
+          discounts: Json;
+          guest_token: string;
+          items: Json;
+          order_id: string;
+          order_reference: string;
+          reservation_expires_at: string;
+          shipping_cents: number;
+          subtotal_cents: number;
+          tax_cents: number;
           total_cents: number;
         }[];
       };
@@ -1361,6 +1782,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      process_commerce_stripe_event: {
+        Args: {
+          p_data: Json;
+          p_event_id: string;
+          p_event_type: string;
+          p_mode: string;
+        };
+        Returns: Json;
+      };
       process_setup_intent_event: {
         Args: {
           p_brand: string;
@@ -1375,6 +1805,18 @@ export type Database = {
       };
       process_stripe_event: {
         Args: { p_data: Json; p_event_id: string; p_event_type: string };
+        Returns: Json;
+      };
+      record_tracking_result: {
+        Args: {
+          p_delivered: boolean;
+          p_delivered_at: string;
+          p_error: string;
+          p_latest_event: Json;
+          p_next_check_at: string;
+          p_order_id: string;
+          p_tracking_status: string;
+        };
         Returns: Json;
       };
       release_checkout_reservation: {

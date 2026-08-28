@@ -1,5 +1,6 @@
 import { AdminReturnActions } from "@/components/admin-return-actions";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
@@ -56,7 +57,7 @@ export default async function Page() {
                       {order.customer_email}
                     </p>
                   </div>
-                  <span>{request.status}</span>
+                  <span>{formatDisplayValue(request.status)}</span>
                 </div>
                 <h2>{request.reason}</h2>
                 <p>{request.explanation}</p>

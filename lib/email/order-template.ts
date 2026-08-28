@@ -1,5 +1,6 @@
 import { publicArtworkUrl } from "../media-url";
 import { formatMelbourneDate } from "../date-time";
+import { formatDisplayValue } from "../presentation";
 
 type OrderRecord = Record<string, unknown>;
 
@@ -129,7 +130,7 @@ const value = (input: unknown, fallback = "") =>
     : String(input);
 
 const humanize = (input: unknown) =>
-  value(input, "Not yet available").replaceAll("_", " ");
+  formatDisplayValue(value(input, "Not yet available"));
 
 const formatDate = (input: unknown) => {
   if (!input) return "";
@@ -160,9 +161,30 @@ function summaryRows(
   total: string,
   variant: CustomerVariant,
 ) {
+  const money = (cents: unknown) =>
+    new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: value(order.currency, "AUD"),
+      minimumFractionDigits: 2,
+    }).format(Number(cents ?? 0) / 100);
+  const appliedDiscounts = Array.isArray(order.order_discounts)
+    ? (order.order_discounts as OrderRecord[])
+    : [];
   const rows: Array<[string, string]> = [
     ["Artwork", artwork],
-    ["Amount", total],
+    ["Artwork subtotal", money(order.subtotal_cents)],
+    ...appliedDiscounts.map(
+      (discount) =>
+        [
+          value(discount.code, "Discount"),
+          `−${money(discount.applied_cents)}`,
+        ] as [string, string],
+    ),
+    ...(appliedDiscounts.length === 0 && Number(order.discount_cents ?? 0) > 0
+      ? [["Discount", `−${money(order.discount_cents)}`] as [string, string]]
+      : []),
+    ["Shipping", money(order.shipping_cents)],
+    ["Total paid", total],
     ["Delivery", humanize(order.delivery_method)],
     [
       "Payment",

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { checkoutSchema } from "../lib/checkout";
 import { commissionSchema, contactSchema } from "../lib/enquiries";
+import { paintingInputSchema } from "../lib/painting-admin";
 
 const checkout = {
-  paintingId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+  paintingIds: ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"],
+  discountCodes: [],
   firstName: "Avery",
   lastName: "Collector",
   email: "AVERY@example.test",
@@ -65,5 +67,36 @@ describe("commerce boundary validation", () => {
         ],
       }).success,
     ).toBe(false);
+  });
+
+  it("converts normal admin AUD inputs to exact integer cents", () => {
+    const painting = paintingInputSchema.parse({
+      slug: "evening-light",
+      title: "Evening Light",
+      description: "",
+      story: "",
+      priceAud: "800",
+      shippingAud: "20.25",
+      currency: "AUD",
+      widthCm: 80,
+      heightCm: 60,
+      depthCm: null,
+      medium: "Oil paint",
+      surface: "Canvas",
+      category: "Expressionism",
+      orientation: "landscape",
+      framed: false,
+      frameDescription: null,
+      signed: true,
+      readyToHang: true,
+      certificate: true,
+      status: "draft",
+      featured: false,
+      year: 2026,
+      seoTitle: null,
+      seoDescription: null,
+    });
+    expect(painting.priceAud).toBe(80000);
+    expect(painting.shippingAud).toBe(2025);
   });
 });

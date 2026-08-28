@@ -3,21 +3,26 @@ import Link from "next/link";
 import { Check, Mail, Sparkles } from "lucide-react";
 import { ClearPurchasedCart } from "@/components/clear-purchased-cart";
 import { formatMoney } from "@/lib/catalog";
-import { getOrderForConfirmation } from "@/lib/orders/confirmation";
+import {
+  getOrderForConfirmation,
+  getOrderForStripeSession,
+} from "@/lib/orders/confirmation";
 
 export const metadata: Metadata = { title: "Order confirmation" };
 export default async function ConfirmationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reference?: string; token?: string }>;
+  searchParams: Promise<{ reference?: string; session_id?: string; token?: string }>;
 }) {
   const query = await searchParams;
-  const order = query.reference
-    ? await getOrderForConfirmation({
+  const order = query.session_id
+    ? await getOrderForStripeSession(query.session_id)
+    : query.reference
+      ? await getOrderForConfirmation({
         reference: query.reference,
         token: query.token,
       })
-    : null;
+      : null;
   return (
     <main className="confirmation-page shell" id="main-content">
       {!order ? (

@@ -22,12 +22,13 @@ export async function triggerEmailOutbox(orderId?: string) {
       try {
         const { data } = await admin
           .from("orders")
-          .select("*, order_items(*)")
+          .select("*, order_items(*), order_discounts(*)")
           .eq("id", job.order_id!)
           .single();
         if (!data) throw new Error("Order unavailable");
         const order = data as unknown as Record<string, unknown> & {
           order_items?: Record<string, unknown>[];
+          order_discounts?: Record<string, unknown>[];
         };
         let payload = (job.payload ?? {}) as Record<string, unknown>;
         if (
@@ -94,6 +95,13 @@ export async function triggerEmailOutbox(orderId?: string) {
           })
           .eq("id", job.id)
           .eq("status", "sending");
+        if (job.template === "delivered" && job.order_id) {
+          await admin
+            .from("orders")
+            .update({ delivered_email_sent_at: new Date().toISOString() })
+            .eq("id", job.order_id)
+            .is("delivered_email_sent_at", null);
+        }
       } catch {
         await admin
           .from("email_outbox")

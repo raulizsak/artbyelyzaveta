@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/catalog";
 import { requireAccount } from "@/lib/auth/authorization";
 import { formatMelbourneDate } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Page() {
@@ -34,8 +35,8 @@ export default async function Page() {
                 <span>
                   <strong>{items[0]?.title ?? "Artwork"}</strong>
                   <small>
-                    {order.payment_status.replaceAll("_", " ")} ·{" "}
-                    {order.fulfillment_status.replaceAll("_", " ")}
+                    {formatDisplayValue(order.payment_status)} ·{" "}
+                    {formatDisplayValue(order.fulfillment_status)}
                   </small>
                 </span>
                 <strong>

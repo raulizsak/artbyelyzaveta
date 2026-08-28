@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMelbourneDateTime } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 30;
@@ -46,7 +47,7 @@ export default async function SubscribersPage({
               <small>{subscriber.source}</small>
             </span>
             <span>
-              <strong>{subscriber.status}</strong>
+              <strong>{formatDisplayValue(subscriber.status)}</strong>
               <small>{formatMelbourneDateTime(subscriber.subscribed_at)}</small>
             </span>
           </article>

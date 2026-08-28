@@ -8,6 +8,7 @@ import { requireAccount } from "@/lib/auth/authorization";
 import { formatMelbourneDate, formatMelbourneDateTime } from "@/lib/date-time";
 import { createClient } from "@/lib/supabase/server";
 import { publicArtworkUrl } from "@/lib/media-url";
+import { formatDisplayValue } from "@/lib/presentation";
 
 export default async function Page({
   params,
@@ -52,9 +53,9 @@ export default async function Page({
       <p className="eyebrow">Order detail</p>
       <h1>{order.order_reference}</h1>
       <div className="status-row order-summary-statuses">
-        <span>{order.payment_status}</span>
-        <span>{order.fulfillment_status}</span>
-        <span>{order.order_status}</span>
+        <span>{formatDisplayValue(order.payment_status)}</span>
+        <span>{formatDisplayValue(order.fulfillment_status)}</span>
+        <span>{formatDisplayValue(order.order_status)}</span>
       </div>
       <OrderProgress
         commissionEta={order.commission_eta}
@@ -131,7 +132,7 @@ export default async function Page({
       {order.commission_stage ? (
         <div className="notice">
           <strong>
-            Commission progress: {order.commission_stage.replaceAll("_", " ")}
+            Commission progress: {formatDisplayValue(order.commission_stage)}
           </strong>
           <p>
             {order.commission_eta

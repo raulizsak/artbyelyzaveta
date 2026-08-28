@@ -19,6 +19,7 @@ type PaintingRow = {
   description: string;
   story: string;
   price_cents: number;
+  shipping_cents: number;
   currency: string;
   width_cm: number | string | null;
   height_cm: number | string | null;
@@ -104,6 +105,7 @@ const mapPainting = (row: PaintingRow): Painting => ({
   description: row.description,
   story: row.story,
   priceCents: row.price_cents,
+  shippingCents: row.shipping_cents,
   currency: row.currency,
   widthCm: toNumber(row.width_cm),
   heightCm: toNumber(row.height_cm),
@@ -134,7 +136,7 @@ export async function getPaintings(): Promise<Painting[]> {
     .from("paintings")
     .select(
       `
-      id, slug, title, description, story, price_cents, currency,
+      id, slug, title, description, story, price_cents, shipping_cents, currency,
       width_cm, height_cm, depth_cm, medium, surface, category, orientation,
       framed, frame_description, signed, ready_to_hang, certificate,
       status, featured, year, seo_title, seo_description, created_at,

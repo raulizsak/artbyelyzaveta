@@ -2,7 +2,11 @@ import { z } from "zod";
 
 export const checkoutSchema = z
   .object({
-    paintingId: z.uuid(),
+    paintingIds: z.array(z.uuid()).min(1).max(10),
+    discountCodes: z
+      .array(z.string().trim().min(1).max(40))
+      .max(5)
+      .default([]),
     firstName: z.string().trim().min(1).max(100),
     lastName: z.string().trim().min(1).max(100),
     email: z

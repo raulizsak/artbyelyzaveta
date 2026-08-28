@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
 import { formatMelbourneDate } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
@@ -42,7 +43,7 @@ export default async function Page() {
               <small>/{painting.slug}</small>
             </span>
             <span>
-              {painting.status}
+              {formatDisplayValue(painting.status)}
               {painting.featured ? " · Featured" : ""}
             </span>
             <strong>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatMoney } from "@/lib/catalog";
 import { formatMelbourneDate, formatMelbourneDateTime } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -56,9 +57,9 @@ export default async function GuestOrderPage({
         only to this order.
       </p>
       <div className="status-row">
-        <span>{order.payment_status}</span>
-        <span>{order.fulfillment_status}</span>
-        <span>{order.order_status}</span>
+        <span>{formatDisplayValue(order.payment_status)}</span>
+        <span>{formatDisplayValue(order.fulfillment_status)}</span>
+        <span>{formatDisplayValue(order.order_status)}</span>
       </div>
       <div className="detail-grid">
         <article>
@@ -100,7 +101,7 @@ export default async function GuestOrderPage({
       {order.commission_stage ? (
         <div className="notice">
           <strong>
-            Commission progress: {order.commission_stage.replaceAll("_", " ")}
+            Commission progress: {formatDisplayValue(order.commission_stage)}
           </strong>
           <p>
             {order.commission_eta

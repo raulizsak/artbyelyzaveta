@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAccount } from "@/lib/auth/authorization";
 import { formatMelbourneDate } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createClient } from "@/lib/supabase/server";
 export default async function Page() {
   await requireAccount("/account/returns");
@@ -27,7 +28,7 @@ export default async function Page() {
                   <small>{formatMelbourneDate(request.created_at)}</small>
                 </span>
                 <span>
-                  <strong>{request.status}</strong>
+                  <strong>{formatDisplayValue(request.status)}</strong>
                   <small>{request.admin_response || "Awaiting review"}</small>
                 </span>
                 <Link href={`/account/orders/${order.order_reference}`}>

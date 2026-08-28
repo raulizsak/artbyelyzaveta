@@ -104,6 +104,31 @@ describe("order email templates", () => {
     expect(invoice.html).toContain("View invoice");
   });
 
+  it("capitalises machine-safe values and shows the financial breakdown", () => {
+    const message = renderOrderEmail({
+      template: "order_update",
+      order: {
+        ...order,
+        subtotal_cents: 80000,
+        discount_cents: 10000,
+        shipping_cents: 4525,
+        total_cents: 74525,
+        is_demo: false,
+        payment_status: "partially_refunded",
+        delivery_method: "manual_arrangement",
+        order_discounts: [{ code: "LISA100", applied_cents: 10000 }],
+      },
+      items: [{ title: "Cows at Dusk" }],
+      payload: {},
+      siteUrl: "https://artbyelyzaveta.shop",
+    });
+    expect(message.text).toContain("Payment: Partially Refunded");
+    expect(message.text).toContain("Delivery: Manual Arrangement");
+    expect(message.text).toContain("Artwork subtotal: $800.00");
+    expect(message.text).toContain("LISA100: −$100.00");
+    expect(message.text).toContain("Shipping: $45.25");
+  });
+
   it("includes the protected admin workflow details and escapes content", () => {
     const message = renderOrderEmail({
       template: "admin_new_order",

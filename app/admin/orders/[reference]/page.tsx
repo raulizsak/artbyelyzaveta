@@ -7,6 +7,7 @@ import { ResendOrderEmailButton } from "@/components/resend-order-email-button";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
 import { formatMelbourneDateTime } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page({
@@ -18,7 +19,7 @@ export default async function Page({
   await requireAdminAal2(`/admin/orders/${encodeURIComponent(reference)}`);
   const { data: order } = await createAdminClient()
     .from("orders")
-    .select("*, order_items(*), order_events(*), refunds(*), invoices(*)")
+    .select("*, order_items(*), order_discounts(*), order_events(*), refunds(*), invoices(*)")
     .eq("order_reference", reference)
     .maybeSingle();
   if (!order) notFound();
@@ -36,6 +37,11 @@ export default async function Page({
       created_at: string;
     }[]
   ).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const discounts = order.order_discounts as unknown as {
+    id: string;
+    code: string;
+    applied_cents: number;
+  }[];
   const address = order.shipping_address as Record<string, string>;
   return (
     <section className="account-panel">
@@ -51,8 +57,8 @@ export default async function Page({
           </h1>
         </div>
         <div className="status-row">
-          <span>{order.payment_status}</span>
-          <span>{order.fulfillment_status}</span>
+          <span>{formatDisplayValue(order.payment_status)}</span>
+          <span>{formatDisplayValue(order.fulfillment_status)}</span>
         </div>
       </div>
       <div className="detail-grid">
@@ -68,11 +74,14 @@ export default async function Page({
             </div>
           ))}
           <hr />
-          <p>
-            <strong>
-              Total {formatMoney(order.total_cents, order.currency)}
-            </strong>
-          </p>
+          <dl className="financial-breakdown">
+            <div><dt>Artwork subtotal</dt><dd>{formatMoney(order.subtotal_cents, order.currency)}</dd></div>
+            {discounts.map((discount) => <div key={discount.id}><dt>{discount.code}</dt><dd>−{formatMoney(discount.applied_cents, order.currency)}</dd></div>)}
+            {!discounts.length && order.discount_cents > 0 ? <div><dt>Discount</dt><dd>−{formatMoney(order.discount_cents, order.currency)}</dd></div> : null}
+            <div><dt>Shipping</dt><dd>{formatMoney(order.shipping_cents, order.currency)}</dd></div>
+            {order.tax_cents > 0 ? <div><dt>GST / tax</dt><dd>{formatMoney(order.tax_cents, order.currency)}</dd></div> : null}
+            <div className="financial-breakdown__total"><dt>Total paid</dt><dd>{formatMoney(order.amount_paid_cents ?? order.total_cents, order.currency)}</dd></div>
+          </dl>
         </article>
         <article>
           <h2>Customer</h2>
@@ -85,17 +94,22 @@ export default async function Page({
             <br />
             {order.customer_phone}
           </p>
-          <address>
-            {address.recipient_name}
-            <br />
-            {address.line1}
-            <br />
-            {address.suburb} {address.state} {address.postcode}
-            <br />
-            {address.country}
-          </address>
+          <p><strong>Delivery:</strong> {formatDisplayValue(order.delivery_method)}</p>
+          {order.delivery_method === "shipping" ? <address>{address.recipient_name}<br />{address.line1}<br />{address.suburb} {address.state} {address.postcode}<br />{address.country}</address> : <p>Personal Collection · Shipping charged: {formatMoney(order.shipping_cents, order.currency)}</p>}
         </article>
       </div>
+      <section className="admin-action-panel tracking-summary">
+        <div className="section-heading"><div><p className="eyebrow">Shipment</p><h2>Tracking</h2></div>{order.tracking_status ? <span className="status-pill">{formatDisplayValue(order.tracking_status)}</span> : null}</div>
+        <dl className="detail-list">
+          <div><dt>Carrier</dt><dd>{order.tracking_carrier || "Not set"}</dd></div>
+          <div><dt>Tracking number</dt><dd>{order.tracking_number || "Not set"}</dd></div>
+          <div><dt>Tracking link</dt><dd>{order.tracking_url ? <a href={order.tracking_url} rel="noreferrer" target="_blank">Open carrier tracking</a> : "Not set"}</dd></div>
+          <div><dt>Status</dt><dd>{formatDisplayValue(order.tracking_status, "Not checked")}</dd></div>
+          <div><dt>Last checked</dt><dd>{order.last_tracking_check_at ? formatMelbourneDateTime(order.last_tracking_check_at) : "Not checked yet"}</dd></div>
+          <div><dt>Delivered</dt><dd>{order.delivered_at ? formatMelbourneDateTime(order.delivered_at) : "Not delivered"}</dd></div>
+          {order.tracking_error ? <div><dt>Latest error</dt><dd>{order.tracking_error}</dd></div> : null}
+        </dl>
+      </section>
       <AdminOrderActions
         initial={{
           fulfillmentStatus: order.fulfillment_status,

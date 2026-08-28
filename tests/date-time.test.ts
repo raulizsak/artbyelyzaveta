@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatMelbourneDateTime, MELBOURNE_TIME_ZONE } from "../lib/date-time";
+import {
+  formatMelbourneDateTime,
+  MELBOURNE_TIME_ZONE,
+  melbourneDateTimeLocalToIso,
+  toMelbourneDateTimeLocal,
+} from "../lib/date-time";
 
 describe("Melbourne date formatting", () => {
   it("uses daylight saving time in summer", () => {
@@ -31,5 +36,14 @@ describe("Melbourne date formatting", () => {
     expect(formatted).toContain("15 July 2026");
     expect(formatted).toContain("12:30 am");
     expect(formatted).toContain("AEST");
+  });
+
+  it("round-trips discount dates in Melbourne across daylight saving", () => {
+    expect(melbourneDateTimeLocalToIso("2026-09-01T09:30")).toBe(
+      "2026-08-31T23:30:00.000Z",
+    );
+    expect(toMelbourneDateTimeLocal("2026-12-14T22:15:00.000Z")).toBe(
+      "2026-12-15T09:15",
+    );
   });
 });

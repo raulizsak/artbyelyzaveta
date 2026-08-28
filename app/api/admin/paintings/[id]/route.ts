@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAccountIdentity } from "@/lib/auth/authorization";
 import { paintingInputSchema } from "@/lib/painting-admin";
+import { syncPaintingCatalog } from "@/lib/stripe/catalog";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function PATCH(
@@ -37,7 +38,8 @@ export async function PATCH(
       title: value.title,
       description: value.description,
       story: value.story,
-      price_cents: value.priceCents,
+      price_cents: value.priceAud,
+      shipping_cents: value.shippingAud,
       currency: value.currency,
       width_cm: value.widthCm,
       height_cm: value.heightCm,
@@ -71,5 +73,6 @@ export async function PATCH(
     target_id: id,
     safe_metadata: { slug: value.slug, status: value.status },
   });
-  return NextResponse.json({ id });
+  const stripeSync = await syncPaintingCatalog(id);
+  return NextResponse.json({ id, stripeSync });
 }

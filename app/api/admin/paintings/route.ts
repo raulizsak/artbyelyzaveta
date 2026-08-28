@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAccountIdentity } from "@/lib/auth/authorization";
 import { paintingInputSchema } from "@/lib/painting-admin";
+import { syncPaintingCatalog } from "@/lib/stripe/catalog";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
       title: value.title,
       description: value.description,
       story: value.story,
-      price_cents: value.priceCents,
+      price_cents: value.priceAud,
+      shipping_cents: value.shippingAud,
       currency: value.currency,
       width_cm: value.widthCm,
       height_cm: value.heightCm,
@@ -66,5 +68,6 @@ export async function POST(request: Request) {
       target_id: data.id,
       safe_metadata: { slug: value.slug, status: value.status },
     });
-  return NextResponse.json({ id: data.id }, { status: 201 });
+  const stripeSync = await syncPaintingCatalog(data.id);
+  return NextResponse.json({ id: data.id, stripeSync }, { status: 201 });
 }

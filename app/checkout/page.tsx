@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
 import { CheckoutClient } from "@/components/checkout-client";
-import { isDemoPaymentMode, isSupabaseConfigured } from "@/lib/env";
+import {
+  getPaymentMode,
+  getStripePublishableKey,
+  isStripeCheckoutEnabled,
+  isSupabaseConfigured,
+} from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Checkout" };
 export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage() {
+  const paymentMode = getPaymentMode();
+  const checkoutEnabled =
+    paymentMode === "demo" ? true : isStripeCheckoutEnabled(paymentMode);
+  const stripePublishableKey =
+    paymentMode === "demo" ? "" : (getStripePublishableKey(paymentMode) ?? "");
   let initialDetails = {};
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
@@ -16,7 +26,11 @@ export default async function CheckoutPage() {
     if (!user)
       return (
         <main className="checkout-page shell" id="main-content">
-          <CheckoutClient checkoutEnabled={isDemoPaymentMode()} />
+          <CheckoutClient
+            checkoutEnabled={checkoutEnabled}
+            paymentMode={paymentMode}
+            stripePublishableKey={stripePublishableKey}
+          />
         </main>
       );
     const [{ data: profile }, { data: address }] = await Promise.all([
@@ -46,8 +60,10 @@ export default async function CheckoutPage() {
   return (
     <main className="checkout-page shell" id="main-content">
       <CheckoutClient
-        checkoutEnabled={isDemoPaymentMode()}
+        checkoutEnabled={checkoutEnabled}
         initialDetails={initialDetails}
+        paymentMode={paymentMode}
+        stripePublishableKey={stripePublishableKey}
       />
     </main>
   );

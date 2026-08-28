@@ -56,6 +56,40 @@ export async function PATCH(
     return NextResponse.json({ error: "Review the update" }, { status: 400 });
   const value = parsed.data;
   const supabase = await createClient();
+  const detectedCarrier =
+    value.trackingCarrier ||
+    (/auspost\.com\.au/i.test(value.trackingUrl) || /AU$/i.test(value.trackingNumber)
+      ? "Australia Post"
+      : "");
+  if (value.fulfillmentStatus === "delivered" && value.action !== "commission_update") {
+    const { error: detailError } = await supabase.rpc("admin_update_order", {
+      p_order_id: id,
+      p_action: "update",
+      p_notify: false,
+      p_changes: {
+        order_status: value.orderStatus,
+        tracking_carrier: detectedCarrier,
+        tracking_number: value.trackingNumber,
+        tracking_url: value.trackingUrl,
+        customer_status_message: value.customerMessage,
+        internal_admin_notes: value.internalNotes,
+      },
+    });
+    const { error: deliveredError } = detailError
+      ? { error: detailError }
+      : await supabase.rpc("admin_mark_order_delivered", {
+          p_order_id: id,
+          p_tracking_status: "Delivered",
+          p_latest_event: {
+            description: "Marked as delivered by the studio.",
+            date: new Date().toISOString(),
+          },
+        });
+    if (deliveredError)
+      return NextResponse.json({ error: "Order not updated" }, { status: 503 });
+    await triggerEmailOutbox(id);
+    return NextResponse.json({ ok: true });
+  }
   const { error } =
     value.action === "commission_update"
       ? await supabase.rpc("admin_update_commission", {
@@ -77,7 +111,7 @@ export async function PATCH(
           p_changes: {
             fulfillment_status: value.fulfillmentStatus,
             order_status: value.orderStatus,
-            tracking_carrier: value.trackingCarrier,
+            tracking_carrier: detectedCarrier,
             tracking_number: value.trackingNumber,
             tracking_url: value.trackingUrl,
             commission_eta: value.commissionEta,

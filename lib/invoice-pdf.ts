@@ -2,6 +2,7 @@ import "server-only";
 
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { formatMelbourneDate } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 
 type InvoiceOrder = Record<string, unknown>;
 type InvoiceItem = Record<string, unknown>;
@@ -82,17 +83,27 @@ export async function generateInvoicePdf(
     thickness: 0.7,
     color: olive,
   });
-  draw("Subtotal", 385, y - 12, 10);
-  draw(money(order.subtotal_cents), 475, y - 12, 10);
-  draw("Shipping", 385, y - 32, 10);
-  draw(money(order.shipping_cents), 475, y - 32, 10);
-  if (gst) {
-    draw("GST", 385, y - 52, 10);
-    draw(money(order.tax_cents), 475, y - 52, 10);
+  let summaryY = y - 12;
+  draw("Artwork subtotal", 365, summaryY, 10);
+  draw(money(order.subtotal_cents), 475, summaryY, 10);
+  summaryY -= 20;
+  if (Number(order.discount_cents ?? 0) > 0) {
+    draw("Discount", 385, summaryY, 10);
+    draw(`-${money(order.discount_cents)}`, 475, summaryY, 10);
+    summaryY -= 20;
   }
-  draw("Total", 385, y - 78, 12, bold);
-  draw(money(order.total_cents), 475, y - 78, 12, bold);
-  draw(`Payment status: ${String(order.payment_status ?? "")}`, 48, 150, 10);
+  draw("Shipping", 385, summaryY, 10);
+  draw(money(order.shipping_cents), 475, summaryY, 10);
+  summaryY -= 20;
+  if (gst) {
+    draw("GST", 385, summaryY, 10);
+    draw(money(order.tax_cents), 475, summaryY, 10);
+    summaryY -= 20;
+  }
+  summaryY -= 8;
+  draw("Total paid", 375, summaryY, 12, bold);
+  draw(money(order.amount_paid_cents ?? order.total_cents), 475, summaryY, 12, bold);
+  draw(`Payment status: ${formatDisplayValue(order.payment_status)}`, 48, 150, 10);
   draw(
     (
       process.env.INVOICE_FOOTER || "Thank you for supporting original art."

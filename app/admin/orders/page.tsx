@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
 import { formatMelbourneDate } from "@/lib/date-time";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 25;
@@ -125,8 +126,8 @@ export default async function Page({
               <span>{items[0]?.title ?? "Artwork"}</span>
               <strong>{formatMoney(order.total_cents, order.currency)}</strong>
               <span>
-                <small>{order.payment_status}</small>
-                <small>{order.fulfillment_status}</small>
+                <small>{formatDisplayValue(order.payment_status)}</small>
+                <small>{formatDisplayValue(order.fulfillment_status)}</small>
               </span>
             </Link>
           );

@@ -27,6 +27,7 @@ export type Painting = {
   description: string;
   story: string;
   priceCents: number;
+  shippingCents: number;
   currency: string;
   widthCm: number | null;
   heightCm: number | null;
@@ -55,6 +56,7 @@ export type CartPainting = Pick<
   | "slug"
   | "title"
   | "priceCents"
+  | "shippingCents"
   | "currency"
   | "medium"
   | "surface"
@@ -69,6 +71,7 @@ export const toCartPainting = (painting: Painting): CartPainting => ({
   slug: painting.slug,
   title: painting.title,
   priceCents: painting.priceCents,
+  shippingCents: painting.shippingCents,
   currency: painting.currency,
   medium: painting.medium,
   surface: painting.surface,
@@ -83,7 +86,8 @@ export const formatMoney = (cents: number, currency = "AUD") =>
   new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(cents / 100);
 
 const formatDimension = (value: number | null) =>

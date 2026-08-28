@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         : {};
     const admin = createAdminClient();
     const { data, error } = await admin.rpc("create_demo_order", {
-      p_painting_id: input.paintingId,
+      p_painting_id: input.paintingIds[0],
       p_customer_user_id: userId as unknown as string,
       p_customer_email: normalizedEmail,
       p_customer_first_name: input.firstName,

@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+const audAmount = z
+  .union([z.string(), z.number()])
+  .transform((value) => String(value).trim())
+  .refine((value) => /^\d+(?:\.\d{1,2})?$/.test(value), {
+    message: "Enter an AUD amount with no more than two decimal places.",
+  })
+  .transform((value) => Math.round(Number(value) * 100));
+
 export const paintingInputSchema = z.object({
   slug: z
     .string()
@@ -9,7 +17,8 @@ export const paintingInputSchema = z.object({
   title: z.string().trim().min(1).max(180),
   description: z.string().trim().max(5000),
   story: z.string().trim().max(10000),
-  priceCents: z.number().int().min(0),
+  priceAud: audAmount,
+  shippingAud: audAmount,
   currency: z.string().regex(/^[A-Z]{3}$/),
   widthCm: z.number().positive().nullable(),
   heightCm: z.number().positive().nullable(),

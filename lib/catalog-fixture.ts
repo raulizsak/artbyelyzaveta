@@ -11,6 +11,7 @@ export const LOCAL_CATALOGUE_FIXTURE: Painting[] = [
     story:
       "A quiet rural scene unfolds beneath an expressive evening sky. The winding track, long shadows and distant fields lead the eye through a landscape made for slow looking.",
     priceCents: 137000,
+    shippingCents: 0,
     currency: "AUD",
     widthCm: 90,
     heightCm: 60,

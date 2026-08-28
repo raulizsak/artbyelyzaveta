@@ -9,6 +9,7 @@ import {
   Menu,
   Package,
   RotateCcw,
+  TicketPercent,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const links = [
   { label: "Overview", href: "/admin", icon: House },
   { label: "Orders", href: "/admin/orders", icon: Package },
   { label: "Paintings", href: "/admin/paintings", icon: Images },
+  { label: "Discounts", href: "/admin/discounts", icon: TicketPercent },
   { label: "Returns", href: "/admin/returns", icon: RotateCcw },
   { label: "Subscribers", href: "/admin/subscribers", icon: UsersRound },
 ];

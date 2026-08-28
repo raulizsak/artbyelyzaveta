@@ -12,7 +12,8 @@ import { useMemo, useState } from "react";
 import { formatMoney } from "@/lib/catalog";
 
 export type CheckoutRequest = {
-  paintingId: string;
+  paintingIds: string[];
+  discountCodes: string[];
   firstName: string;
   lastName: string;
   email: string;
@@ -29,9 +30,11 @@ export type CheckoutRequest = {
 function PaymentForm({
   email,
   sessionId,
+  mode,
 }: {
   email: string;
   sessionId: string;
+  mode: "test" | "live";
 }) {
   const router = useRouter();
   const result = useCheckoutElements();
@@ -70,7 +73,11 @@ function PaymentForm({
         type="button"
       >
         <ShieldCheck aria-hidden="true" size={17} />
-        {busy ? "Confirming…" : "Pay securely in TEST MODE"}
+        {busy
+          ? "Confirming…"
+          : mode === "test"
+            ? "Pay securely in test mode"
+            : "Pay securely"}
       </button>
       {error ? (
         <p className="form-error" role="alert">
@@ -86,20 +93,24 @@ export function StripePaymentPanel({
   currency,
   request,
   enabled,
+  publishableKey,
+  mode,
 }: {
   amount: number;
   currency: string;
   request: CheckoutRequest;
   enabled: boolean;
+  publishableKey: string;
+  mode: "test" | "live";
 }) {
   const [clientSecret, setClientSecret] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const stripe = useMemo(() => {
-    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    return key?.startsWith("pk_test_") ? loadStripe(key) : null;
-  }, []);
+    const prefix = mode === "live" ? "pk_live_" : "pk_test_";
+    return publishableKey.startsWith(prefix) ? loadStripe(publishableKey) : null;
+  }, [mode, publishableKey]);
 
   async function prepare() {
     setBusy(true);
@@ -127,7 +138,9 @@ export function StripePaymentPanel({
     <section aria-labelledby="payment-heading" className="mock-payment-panel">
       <LockKeyhole aria-hidden="true" size={24} strokeWidth={1.5} />
       <div className="payment-panel__body">
-        <p className="eyebrow">Stripe TEST MODE</p>
+        <p className="eyebrow">
+          {mode === "test" ? "Stripe test mode" : "Secure checkout"}
+        </p>
         <h3 id="payment-heading">Secure card payment</h3>
         <p>
           Card details are entered directly into Stripe and are never stored by
@@ -138,8 +151,8 @@ export function StripePaymentPanel({
         </p>
         {!enabled ? (
           <p className="form-help">
-            Test checkout is safely disabled until the connected Stripe test
-            keys are configured. No order will be created.
+            Secure checkout is temporarily unavailable. No order will be
+            created.
           </p>
         ) : null}
         {enabled && !clientSecret ? (
@@ -150,7 +163,11 @@ export function StripePaymentPanel({
             type="button"
           >
             <ShieldCheck aria-hidden="true" size={17} />
-            {busy ? "Reserving artwork…" : "Continue to test payment"}
+            {busy
+              ? "Reserving artwork…"
+              : mode === "test"
+                ? "Continue to test payment"
+                : "Continue to secure payment"}
           </button>
         ) : null}
         {clientSecret && stripe ? (
@@ -166,7 +183,11 @@ export function StripePaymentPanel({
             }}
             stripe={stripe}
           >
-            <PaymentForm email={request.email} sessionId={sessionId} />
+            <PaymentForm
+              email={request.email}
+              mode={mode}
+              sessionId={sessionId}
+            />
           </CheckoutElementsProvider>
         ) : null}
         {error ? (

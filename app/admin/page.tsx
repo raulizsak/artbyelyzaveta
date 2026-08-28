@@ -15,6 +15,7 @@ import {
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMelbourneDate } from "@/lib/date-time";
 import { publicArtworkUrl } from "@/lib/media-url";
+import { formatDisplayValue } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
@@ -149,8 +150,8 @@ export default async function Page() {
                       {order.customer_first_name} {order.customer_last_name}
                     </strong>
                     <small>
-                      {order.payment_status.replaceAll("_", " ")} ·{" "}
-                      {order.fulfillment_status.replaceAll("_", " ")}
+                      {formatDisplayValue(order.payment_status)} ·{" "}
+                      {formatDisplayValue(order.fulfillment_status)}
                     </small>
                   </span>
                 </span>
