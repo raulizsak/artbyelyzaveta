@@ -1,6 +1,7 @@
 import "server-only";
 
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { formatMelbourneDate } from "@/lib/date-time";
 
 type InvoiceOrder = Record<string, unknown>;
 type InvoiceItem = Record<string, unknown>;
@@ -47,12 +48,7 @@ export async function generateInvoicePdf(
   if (process.env.BUSINESS_ADDRESS)
     draw(process.env.BUSINESS_ADDRESS.slice(0, 90), 48, 724, 10);
   draw(`Order ${String(order.order_reference ?? "")}`, 48, 680, 16, bold);
-  draw(
-    `Issued ${new Intl.DateTimeFormat("en-AU", { dateStyle: "long" }).format(new Date())}`,
-    48,
-    658,
-    10,
-  );
+  draw(`Issued ${formatMelbourneDate(new Date(), "long")}`, 48, 658, 10);
   draw(
     `Customer: ${String(order.customer_first_name ?? "")} ${String(order.customer_last_name ?? "")}`,
     48,

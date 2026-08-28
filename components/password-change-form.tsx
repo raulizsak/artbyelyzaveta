@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LockKeyhole } from "lucide-react";
+import { PasswordField } from "@/components/password-field";
 import { createClient } from "@/lib/supabase/client";
 
 const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{10,}$/;
@@ -75,39 +76,30 @@ export function PasswordChangeForm({ email }: { email: string }) {
       </div>
       <p>Confirm your current password, then choose a strong replacement.</p>
       <form className="password-change-form" onSubmit={submit}>
-        <label className="form-field">
-          <span>Current password</span>
-          <input
-            autoComplete="current-password"
-            onChange={(event) => setCurrentPassword(event.target.value)}
-            required
-            type="password"
-            value={currentPassword}
-          />
-        </label>
+        <PasswordField
+          autoComplete="current-password"
+          label="Current password"
+          onChange={setCurrentPassword}
+          required
+          value={currentPassword}
+        />
         <div className="form-grid two-col">
-          <label className="form-field">
-            <span>New password</span>
-            <input
-              autoComplete="new-password"
-              minLength={10}
-              onChange={(event) => setNewPassword(event.target.value)}
-              required
-              type="password"
-              value={newPassword}
-            />
-          </label>
-          <label className="form-field">
-            <span>Confirm new password</span>
-            <input
-              autoComplete="new-password"
-              minLength={10}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              required
-              type="password"
-              value={confirmPassword}
-            />
-          </label>
+          <PasswordField
+            autoComplete="new-password"
+            label="New password"
+            minLength={10}
+            onChange={setNewPassword}
+            required
+            value={newPassword}
+          />
+          <PasswordField
+            autoComplete="new-password"
+            label="Confirm new password"
+            minLength={10}
+            onChange={setConfirmPassword}
+            required
+            value={confirmPassword}
+          />
         </div>
         <p className="form-help">
           At least 10 characters, including upper and lowercase letters and a

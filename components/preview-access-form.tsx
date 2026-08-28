@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PasswordField } from "@/components/password-field";
 
 export function PreviewAccessForm({ next }: { next: string }) {
   const [password, setPassword] = useState("");
@@ -31,17 +32,14 @@ export function PreviewAccessForm({ next }: { next: string }) {
 
   return (
     <form className="preview-gate__form" onSubmit={submit}>
-      <label className="form-field">
-        <span>Preview password</span>
-        <input
-          autoComplete="current-password"
-          autoFocus
-          onChange={(event) => setPassword(event.target.value)}
-          required
-          type="password"
-          value={password}
-        />
-      </label>
+      <PasswordField
+        autoComplete="current-password"
+        autoFocus
+        label="Preview password"
+        onChange={setPassword}
+        required
+        value={password}
+      />
       {error ? (
         <p className="form-error" role="alert">
           {error}

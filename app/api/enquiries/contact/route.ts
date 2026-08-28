@@ -4,6 +4,7 @@ import { sendShopNotification } from "@/lib/email/smtp2go";
 import { describeEmailFailure } from "@/lib/email/transport";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatMelbourneDateTime } from "@/lib/date-time";
 
 export async function POST(request: Request) {
   try {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
           ["Name", parsed.data.name],
           ["Email", parsed.data.email],
           ["Subject", parsed.data.subject],
-          ["Submitted", new Date(created.created_at).toLocaleString("en-AU")],
+          ["Submitted", formatMelbourneDateTime(created.created_at)],
         ],
         message: parsed.data.message,
       });

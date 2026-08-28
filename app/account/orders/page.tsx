@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatMoney } from "@/lib/catalog";
 import { requireAccount } from "@/lib/auth/authorization";
+import { formatMelbourneDate } from "@/lib/date-time";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Page() {
@@ -28,11 +29,7 @@ export default async function Page() {
               >
                 <span>
                   <strong>{order.order_reference}</strong>
-                  <small>
-                    {new Intl.DateTimeFormat("en-AU", {
-                      dateStyle: "medium",
-                    }).format(new Date(order.created_at))}
-                  </small>
+                  <small>{formatMelbourneDate(order.created_at)}</small>
                 </span>
                 <span>
                   <strong>{items[0]?.title ?? "Artwork"}</strong>

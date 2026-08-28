@@ -7,6 +7,7 @@ import {
   Palette,
   Truck,
 } from "lucide-react";
+import { formatMelbourneDate } from "@/lib/date-time";
 
 type OrderProgressProps = {
   reference: string;
@@ -35,10 +36,7 @@ const stageIndex: Record<string, number> = {
   delivered: 3,
 };
 
-const date = (value: string) =>
-  new Intl.DateTimeFormat("en-AU", { dateStyle: "long" }).format(
-    new Date(value),
-  );
+const date = (value: string) => formatMelbourneDate(value, "long");
 
 export function OrderProgress(props: OrderProgressProps) {
   const current = stageIndex[props.fulfillmentStatus] ?? 0;

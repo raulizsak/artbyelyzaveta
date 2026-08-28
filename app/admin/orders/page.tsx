@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
+import { formatMelbourneDate } from "@/lib/date-time";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PAGE_SIZE = 25;
@@ -113,11 +114,7 @@ export default async function Page({
                     <span className="demo-badge">DEMO</span>
                   ) : null}
                 </strong>
-                <small>
-                  {new Intl.DateTimeFormat("en-AU", {
-                    dateStyle: "medium",
-                  }).format(new Date(order.created_at))}
-                </small>
+                <small>{formatMelbourneDate(order.created_at)}</small>
               </span>
               <span>
                 <strong>

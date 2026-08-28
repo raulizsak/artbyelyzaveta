@@ -6,6 +6,7 @@ import { RefundForm } from "@/components/refund-form";
 import { ResendOrderEmailButton } from "@/components/resend-order-email-button";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
+import { formatMelbourneDateTime } from "@/lib/date-time";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page({
@@ -122,12 +123,7 @@ export default async function Page({
                 <span />
                 <div>
                   <strong>{event.customer_safe_description}</strong>
-                  <small>
-                    {new Intl.DateTimeFormat("en-AU", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(event.created_at))}
-                  </small>
+                  <small>{formatMelbourneDateTime(event.created_at)}</small>
                 </div>
               </li>
             ))}

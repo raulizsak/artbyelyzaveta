@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAccount } from "@/lib/auth/authorization";
+import { formatMelbourneDate } from "@/lib/date-time";
 import { createClient } from "@/lib/supabase/server";
 export default async function Page() {
   await requireAccount("/account/returns");
@@ -23,11 +24,7 @@ export default async function Page() {
               <article className="order-card" key={request.id}>
                 <span>
                   <strong>{request.reason}</strong>
-                  <small>
-                    {new Intl.DateTimeFormat("en-AU", {
-                      dateStyle: "medium",
-                    }).format(new Date(request.created_at))}
-                  </small>
+                  <small>{formatMelbourneDate(request.created_at)}</small>
                 </span>
                 <span>
                   <strong>{request.status}</strong>

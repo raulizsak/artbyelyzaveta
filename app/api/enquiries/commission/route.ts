@@ -4,6 +4,7 @@ import { sendShopNotification } from "@/lib/email/smtp2go";
 import { describeEmailFailure } from "@/lib/email/transport";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatMelbourneDateTime } from "@/lib/date-time";
 
 export async function POST(request: Request) {
   try {
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
           ["Dimensions", enquiry.dimensions],
           ["Budget", enquiry.budget],
           ["Timing", enquiry.timing],
-          ["Submitted", new Date(created.created_at).toLocaleString("en-AU")],
+          ["Submitted", formatMelbourneDateTime(created.created_at)],
           [
             "Inspiration files",
             inspirationFiles.length ? String(inspirationFiles.length) : "None",

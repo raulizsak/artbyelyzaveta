@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { PasswordField } from "@/components/password-field";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
@@ -14,11 +15,16 @@ const messages: Record<Mode, { title: string; submit: string }> = {
   reset: { title: "Choose a new password", submit: "Update password" },
 };
 
+const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{10,}$/;
+
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [status, setStatus] = useState<"idle" | "busy" | "success">("idle");
@@ -30,6 +36,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (status === "busy") return;
+    setSubmitAttempted(true);
+    if (
+      (mode === "signup" || mode === "reset") &&
+      !strongPassword.test(password)
+    ) {
+      setError(
+        "Use at least 10 characters with upper and lowercase letters and a number.",
+      );
+      return;
+    }
+    if (
+      (mode === "signup" || mode === "reset") &&
+      password !== confirmPassword
+    ) {
+      setError("");
+      return;
+    }
     setStatus("busy");
     setError("");
     const supabase = createClient();
@@ -104,6 +127,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   const showEmail = mode !== "reset";
   const showPassword = mode !== "forgot";
+  const needsConfirmation = mode === "signup" || mode === "reset";
+  const showMismatch =
+    needsConfirmation &&
+    (confirmTouched || submitAttempted) &&
+    confirmPassword.length > 0 &&
+    password !== confirmPassword;
+  const showRequirements = needsConfirmation && password.length > 0;
   return (
     <form className="auth-card" onSubmit={submit}>
       <p className="eyebrow">Your Art by Elyzaveta account</p>
@@ -143,22 +173,66 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </label>
       ) : null}
       {showPassword ? (
-        <label className="form-field">
-          <span>{mode === "reset" ? "New password" : "Password"}</span>
-          <input
-            autoComplete={
-              mode === "login" ? "current-password" : "new-password"
-            }
-            minLength={10}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            type="password"
-            value={password}
-          />
-          <small>
-            At least 10 characters with upper/lowercase letters and a number.
-          </small>
-        </label>
+        <PasswordField
+          autoComplete={mode === "login" ? "current-password" : "new-password"}
+          error={
+            submitAttempted &&
+            needsConfirmation &&
+            !strongPassword.test(password)
+          }
+          helper={
+            showRequirements ? (
+              <ul
+                className="password-requirements"
+                aria-label="Password requirements"
+              >
+                <li className={password.length >= 10 ? "is-met" : ""}>
+                  10 or more characters
+                </li>
+                <li
+                  className={
+                    /[a-z]/.test(password) && /[A-Z]/.test(password)
+                      ? "is-met"
+                      : ""
+                  }
+                >
+                  Upper and lowercase letters
+                </li>
+                <li className={/\d/.test(password) ? "is-met" : ""}>
+                  At least one number
+                </li>
+              </ul>
+            ) : undefined
+          }
+          label={mode === "reset" ? "New password" : "Password"}
+          onChange={(value) => {
+            setPassword(value);
+            if (error) setError("");
+          }}
+          required
+          value={password}
+        />
+      ) : null}
+      {needsConfirmation ? (
+        <PasswordField
+          autoComplete="new-password"
+          error={showMismatch}
+          helper={
+            showMismatch ? (
+              <p className="password-mismatch" role="alert">
+                The passwords do not match.
+              </p>
+            ) : undefined
+          }
+          label="Confirm password"
+          onBlur={() => setConfirmTouched(true)}
+          onChange={(value) => {
+            setConfirmPassword(value);
+            if (error) setError("");
+          }}
+          required
+          value={confirmPassword}
+        />
       ) : null}
       {error ? (
         <p className="form-error" role="alert">

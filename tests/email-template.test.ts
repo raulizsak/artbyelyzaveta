@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { renderOrderEmail } from "../lib/email/order-template";
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://project-ref.supabase.co";
@@ -49,6 +50,8 @@ describe("order email templates", () => {
     expect(message.html).toContain(
       "artwork-public/paintings/cows-at-dusk/main.webp",
     );
+    expect(message.html).toContain("brand-email-logo.svg");
+    expect(message.html).toContain("elyzaveta-signature.png");
   });
 
   it.each([
@@ -115,5 +118,24 @@ describe("order email templates", () => {
     expect(message.text).toContain("/admin/orders/ABE-2026-DEMO0001");
     expect(message.html).not.toContain("<script>not markup</script>");
     expect(message.html).toContain("&lt;script&gt;not markup&lt;/script&gt;");
+    expect(message.html).toContain("brand-email-logo.svg");
+    expect(message.html).not.toContain("❦");
+    expect(message.html).not.toContain("elyzaveta-signature.png");
   });
+
+  it.each([
+    ["confirmation", "confirmation-landscape.png", "Confirm email address"],
+    ["recovery", "recovery-landscape.png", "Reset password"],
+  ])(
+    "keeps the %s auth template artwork and signature explicit",
+    (name, artwork, action) => {
+      const html = readFileSync(`supabase/templates/${name}.html`, "utf8");
+
+      expect(html).toContain("brand-email-logo.svg");
+      expect(html).toContain(artwork);
+      expect(html).toContain("elyzaveta-signature.png");
+      expect(html).toContain(action);
+      expect(html).toContain("{{ .ConfirmationURL }}");
+    },
+  );
 });

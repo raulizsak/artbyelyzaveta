@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
+import { formatMelbourneDate } from "@/lib/date-time";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page() {
@@ -50,11 +51,7 @@ export default async function Page() {
             <span>
               {(painting.painting_media as unknown[]).length} variants
             </span>
-            <small>
-              {new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(
-                new Date(painting.updated_at),
-              )}
-            </small>
+            <small>{formatMelbourneDate(painting.updated_at)}</small>
           </Link>
         ))}
       </div>

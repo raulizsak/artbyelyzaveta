@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatMoney } from "@/lib/catalog";
+import { formatMelbourneDate, formatMelbourneDateTime } from "@/lib/date-time";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -103,10 +104,10 @@ export default async function GuestOrderPage({
           </strong>
           <p>
             {order.commission_eta
-              ? `Estimated completion: ${new Intl.DateTimeFormat("en-AU", { dateStyle: "long" }).format(new Date(`${order.commission_eta}T00:00:00`))}. `
+              ? `Estimated completion: ${formatMelbourneDate(`${order.commission_eta}T00:00:00`, "long")}. `
               : ""}
             {order.expected_dispatch
-              ? `Expected dispatch: ${new Intl.DateTimeFormat("en-AU", { dateStyle: "long" }).format(new Date(`${order.expected_dispatch}T00:00:00`))}.`
+              ? `Expected dispatch: ${formatMelbourneDate(`${order.expected_dispatch}T00:00:00`, "long")}.`
               : ""}
           </p>
         </div>
@@ -119,12 +120,7 @@ export default async function GuestOrderPage({
               <span />
               <div>
                 <strong>{event.customer_safe_description}</strong>
-                <small>
-                  {new Intl.DateTimeFormat("en-AU", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }).format(new Date(event.created_at))}
-                </small>
+                <small>{formatMelbourneDateTime(event.created_at)}</small>
               </div>
             </li>
           ))}

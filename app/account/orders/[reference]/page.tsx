@@ -5,6 +5,7 @@ import { ReturnRequestForm } from "@/components/return-request-form";
 import { OrderProgress } from "@/components/order-progress";
 import { formatMoney } from "@/lib/catalog";
 import { requireAccount } from "@/lib/auth/authorization";
+import { formatMelbourneDate, formatMelbourneDateTime } from "@/lib/date-time";
 import { createClient } from "@/lib/supabase/server";
 import { publicArtworkUrl } from "@/lib/media-url";
 
@@ -134,10 +135,10 @@ export default async function Page({
           </strong>
           <p>
             {order.commission_eta
-              ? `Estimated completion: ${new Intl.DateTimeFormat("en-AU", { dateStyle: "long" }).format(new Date(`${order.commission_eta}T00:00:00`))}. `
+              ? `Estimated completion: ${formatMelbourneDate(`${order.commission_eta}T00:00:00`, "long")}. `
               : ""}
             {order.expected_dispatch
-              ? `Expected dispatch: ${new Intl.DateTimeFormat("en-AU", { dateStyle: "long" }).format(new Date(`${order.expected_dispatch}T00:00:00`))}.`
+              ? `Expected dispatch: ${formatMelbourneDate(`${order.expected_dispatch}T00:00:00`, "long")}.`
               : ""}
           </p>
         </div>
@@ -150,12 +151,7 @@ export default async function Page({
               <span />
               <div>
                 <strong>{event.customer_safe_description}</strong>
-                <small>
-                  {new Intl.DateTimeFormat("en-AU", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }).format(new Date(event.created_at))}
-                </small>
+                <small>{formatMelbourneDateTime(event.created_at)}</small>
               </div>
             </li>
           ))}
