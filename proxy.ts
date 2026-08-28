@@ -1,34 +1,29 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  hasValidPreviewCookie,
+  isPreviewGateEnabled,
+  PREVIEW_COOKIE_NAME,
+} from "@/lib/preview";
+
+const publicPaths = new Set(["/", "/preview"]);
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!isPreviewGateEnabled() || publicPaths.has(request.nextUrl.pathname))
+    return NextResponse.next();
 
-  if (!url || !publishableKey) return response;
+  const cookie = request.cookies.get(PREVIEW_COOKIE_NAME)?.value;
+  if (await hasValidPreviewCookie(cookie)) return NextResponse.next();
 
-  const supabase = createServerClient(url, publishableKey, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value),
-        );
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
-      },
-    },
-  });
-
-  await supabase.auth.getClaims();
-  return response;
+  const destination = new URL("/preview", request.url);
+  destination.searchParams.set(
+    "next",
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  );
+  return NextResponse.redirect(destination);
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif)$).*)",
+    "/((?!api|auth/callback|_next|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|woff|woff2|txt|xml)$).*)",
   ],
 };

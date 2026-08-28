@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UserRound } from "lucide-react";
 
 export function ProfileForm({
   initial,
@@ -28,8 +29,17 @@ export function ProfileForm({
   }
   return (
     <form className="account-panel" onSubmit={submit}>
-      <p className="eyebrow">Profile</p>
-      <h1>Your details</h1>
+      <div className="panel-heading-with-icon">
+        <UserRound aria-hidden="true" />
+        <span>
+          <p className="eyebrow">Profile</p>
+          <h1>Your details</h1>
+        </span>
+      </div>
+      <p className="account-panel__intro">
+        Keep your contact details current for delivery updates and studio
+        correspondence.
+      </p>
       <div className="form-grid two-col">
         <label className="form-field">
           <span>First name</span>
@@ -60,8 +70,8 @@ export function ProfileForm({
         <label className="form-field">
           <span>Verified email</span>
           <input disabled value={values.email} />
-          <small>
-            Email changes use Supabase&apos;s secure verification flow.
+          <small className="neutral-helper">
+            Verified and protected by secure email confirmation.
           </small>
         </label>
       </div>
@@ -73,10 +83,14 @@ export function ProfileForm({
         {state === "busy" ? "Saving…" : "Save profile"}
       </button>
       {state === "saved" ? (
-        <p className="form-success-inline">Profile saved.</p>
+        <p className="form-success-inline" role="status">
+          Your profile has been saved.
+        </p>
       ) : null}
       {state === "error" ? (
-        <p className="form-error">We couldn&apos;t save your profile.</p>
+        <p className="form-error" role="alert">
+          We couldn&apos;t save your profile.
+        </p>
       ) : null}
     </form>
   );

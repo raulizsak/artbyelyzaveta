@@ -37,7 +37,8 @@ export default async function Page() {
                 <span>
                   <strong>{items[0]?.title ?? "Artwork"}</strong>
                   <small>
-                    {order.payment_status} · {order.fulfillment_status}
+                    {order.payment_status.replaceAll("_", " ")} ·{" "}
+                    {order.fulfillment_status.replaceAll("_", " ")}
                   </small>
                 </span>
                 <strong>

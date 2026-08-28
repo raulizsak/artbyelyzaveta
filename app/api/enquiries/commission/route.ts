@@ -79,6 +79,31 @@ export async function POST(request: Request) {
       }
     }
     try {
+      const attachmentResults = await Promise.all(
+        inspirationFiles.map(async (file) => {
+          const [{ data: downloaded, error: downloadError }, signed] =
+            await Promise.all([
+              supabase.storage
+                .from("commission-inspiration")
+                .download(file.path),
+              supabase.storage
+                .from("commission-inspiration")
+                .createSignedUrl(file.path, 60 * 60 * 24 * 7),
+            ]);
+          if (downloadError || !downloaded)
+            throw downloadError ?? new Error("attachment-download-failed");
+          return {
+            attachment: {
+              filename: file.fileName,
+              content: Buffer.from(await downloaded.arrayBuffer()),
+              contentType: file.contentType,
+            },
+            link: signed.data?.signedUrl
+              ? { label: file.fileName, url: signed.data.signedUrl }
+              : null,
+          };
+        }),
+      );
       const providerId = await sendShopNotification({
         subject: `New commission enquiry — ${enquiry.subject}`,
         heading: "New commission enquiry",
@@ -99,6 +124,10 @@ export async function POST(request: Request) {
           ["Additional notes", enquiry.notes],
         ],
         message: enquiry.inspiration,
+        attachments: attachmentResults.map((result) => result.attachment),
+        links: attachmentResults.flatMap((result) =>
+          result.link ? [result.link] : [],
+        ),
       });
       await supabase
         .from("commission_enquiries")

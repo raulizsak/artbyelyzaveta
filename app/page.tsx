@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BrandLogo } from "@/components/brand-logo";
 import { ComingSoonSignup } from "@/components/coming-soon-signup";
 
 export const metadata: Metadata = {
@@ -12,10 +13,7 @@ export default function HomePage() {
     <main className="coming-soon" id="main-content">
       <div className="coming-soon__wash" aria-hidden="true" />
       <section className="coming-soon__card">
-        <div className="coming-soon__mark" aria-hidden="true">
-          <span>E</span>
-        </div>
-        <p className="coming-soon__brand">Art by Elyzaveta</p>
+        <BrandLogo className="coming-soon__logo" />
         <p className="eyebrow">Your new art shop</p>
         <h1>Coming soon</h1>
         <p className="coming-soon__lede">

@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/") return children;
+  if (pathname === "/" || pathname === "/preview") return children;
   return (
     <>
       <a className="skip-link" href="#main-content">

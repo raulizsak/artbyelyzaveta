@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="92" viewBox="0 0 360 92" fill="none">
+  <g stroke="#454a35" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6">
+    <path d="M18 56 11 80M43 56l8 24M31 56v24M9 80h45"/>
+    <rect x="10" y="10" width="43" height="43" rx="2"/>
+    <path stroke="#b69a64" stroke-width="2.4" d="M17 39c6-9 12 6 18-2 5-7 9-1 13-7"/>
+    <path d="m43 63 11-18m0 0 3-6"/>
+  </g>
+  <text x="76" y="33" fill="#454a35" font-family="Georgia, serif" font-size="15" letter-spacing="5">ART BY</text>
+  <text x="76" y="65" fill="#23261f" font-family="Georgia, serif" font-size="30" letter-spacing="1">Elyzaveta</text>
+</svg>

@@ -1,9 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReturnRequestForm } from "@/components/return-request-form";
+import { OrderProgress } from "@/components/order-progress";
 import { formatMoney } from "@/lib/catalog";
 import { requireAccount } from "@/lib/auth/authorization";
 import { createClient } from "@/lib/supabase/server";
+import { publicArtworkUrl } from "@/lib/media-url";
 
 export default async function Page({
   params,
@@ -16,7 +19,7 @@ export default async function Page({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, order_reference, created_at, total_cents, currency, payment_status, fulfillment_status, order_status, shipping_address, delivery_method, tracking_carrier, tracking_number, tracking_url, commission_eta, commission_stage, expected_dispatch, customer_status_message, order_items(title, image_path, dimensions, medium), order_events(event_type, customer_safe_description, created_at), invoices(id, invoice_reference)",
+      "id, order_reference, created_at, delivered_at, cancelled_at, total_cents, currency, payment_status, fulfillment_status, order_status, shipping_address, delivery_method, tracking_carrier, tracking_number, tracking_url, commission_eta, commission_stage, expected_dispatch, customer_status_message, order_items(title, image_path, dimensions, medium), order_events(event_type, customer_safe_description, created_at), invoices(id, invoice_reference)",
     )
     .eq("order_reference", reference)
     .maybeSingle();
@@ -35,6 +38,11 @@ export default async function Page({
     }[]
   ).sort((a, b) => a.created_at.localeCompare(b.created_at));
   const address = order.shipping_address as Record<string, string>;
+  const invoices = order.invoices as unknown as {
+    id: string;
+    invoice_reference: string;
+  }[];
+  const artworkImage = publicArtworkUrl(items[0]?.image_path);
   return (
     <section className="account-panel">
       <Link className="text-button" href="/account/orders">
@@ -42,20 +50,47 @@ export default async function Page({
       </Link>
       <p className="eyebrow">Order detail</p>
       <h1>{order.order_reference}</h1>
-      <div className="status-row">
+      <div className="status-row order-summary-statuses">
         <span>{order.payment_status}</span>
         <span>{order.fulfillment_status}</span>
         <span>{order.order_status}</span>
       </div>
+      <OrderProgress
+        commissionEta={order.commission_eta}
+        customerMessage={order.customer_status_message}
+        deliveredAt={order.delivered_at}
+        expectedDispatch={order.expected_dispatch}
+        fulfillmentStatus={order.fulfillment_status}
+        invoiceAvailable={
+          invoices.length > 0 ||
+          ["paid", "partially_refunded", "refunded"].includes(
+            order.payment_status,
+          )
+        }
+        orderStatus={order.order_status}
+        reference={order.order_reference}
+        trackingNumber={order.tracking_number}
+        trackingUrl={order.tracking_url}
+      />
       <div className="detail-grid">
-        <article>
-          <h2>{items[0]?.title ?? "Artwork"}</h2>
-          <p>
-            {[items[0]?.medium, items[0]?.dimensions]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          <strong>{formatMoney(order.total_cents, order.currency)}</strong>
+        <article className="order-artwork-summary">
+          {artworkImage ? (
+            <Image
+              alt={items[0]?.title ?? "Ordered artwork"}
+              height={180}
+              src={artworkImage}
+              width={180}
+            />
+          ) : null}
+          <div>
+            <h2>{items[0]?.title ?? "Artwork"}</h2>
+            <p>
+              {[items[0]?.medium, items[0]?.dimensions]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+            <strong>{formatMoney(order.total_cents, order.currency)}</strong>
+          </div>
         </article>
         <article>
           <h2>Delivery</h2>
@@ -86,7 +121,7 @@ export default async function Page({
           )}
         </article>
       </div>
-      {order.customer_status_message ? (
+      {order.customer_status_message && order.order_status !== "delayed" ? (
         <div className="notice">
           <strong>Update from Elyzaveta</strong>
           <p>{order.customer_status_message}</p>
@@ -108,7 +143,7 @@ export default async function Page({
         </div>
       ) : null}
       <section>
-        <h2>Timeline</h2>
+        <h2>Order activity</h2>
         <ol className="order-timeline">
           {events.map((event) => (
             <li key={`${event.created_at}-${event.event_type}`}>

@@ -6,6 +6,7 @@ import {
   sendTransactionalEmail,
 } from "@/lib/email/transport";
 import { SITE_URL } from "@/lib/site";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function triggerEmailOutbox(orderId?: string) {
@@ -63,11 +64,25 @@ export async function triggerEmailOutbox(orderId?: string) {
               ? process.env.ADMIN_EMAIL?.trim()
               : job.recipient;
         if (!intended) throw new Error("Recipient unavailable");
+        const attachments =
+          job.template === "invoice"
+            ? [
+                {
+                  filename: `${String(order.order_reference)}.pdf`,
+                  content: await generateInvoicePdf(
+                    order,
+                    order.order_items ?? [],
+                  ),
+                  contentType: "application/pdf",
+                },
+              ]
+            : undefined;
         const providerId = await sendTransactionalEmail({
           to: intended,
           subject: message.subject,
           text: message.text,
           html: message.html,
+          attachments,
         });
         await admin
           .from("email_outbox")

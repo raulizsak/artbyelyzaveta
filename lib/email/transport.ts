@@ -2,12 +2,19 @@ import "server-only";
 
 import nodemailer from "nodemailer";
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
+
 type TransactionalEmail = {
   to: string;
   subject: string;
   text: string;
   html: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 };
 
 const required = (name: string) => {
@@ -80,6 +87,7 @@ export async function sendTransactionalEmail(input: TransactionalEmail) {
     subject: live ? input.subject : `[TEST for ${input.to}] ${input.subject}`,
     text: input.text,
     html: input.html,
+    attachments: input.attachments,
   });
   return info.messageId || null;
 }

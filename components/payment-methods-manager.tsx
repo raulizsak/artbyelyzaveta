@@ -9,6 +9,7 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { CreditCard, LockKeyhole } from "lucide-react";
 
 type Method = {
   id: string;
@@ -95,8 +96,13 @@ export function PaymentMethodsManager({
   }
   return (
     <section className="account-panel">
-      <p className="eyebrow">Payment methods</p>
-      <h1>Saved cards</h1>
+      <div className="panel-heading-with-icon">
+        <CreditCard aria-hidden="true" />
+        <span>
+          <p className="eyebrow">Payment methods</p>
+          <h1>Saved cards</h1>
+        </span>
+      </div>
       <p>
         Card numbers and security codes are handled only by Stripe. Art by
         Elyzaveta stores only brand, last four digits and expiry for display.
@@ -152,10 +158,17 @@ export function PaymentMethodsManager({
         </Elements>
       ) : null}
       {!enabled ? (
-        <p className="form-help">
-          Card setup remains disabled until Stripe TEST MODE keys are
-          configured.
-        </p>
+        <div className="payment-availability-note">
+          <LockKeyhole aria-hidden="true" />
+          <p>
+            <strong>
+              Saved cards are not enabled during the private preview.
+            </strong>
+            <br />
+            Checkout currently uses the clearly labelled demo flow, and no card
+            payment is taken.
+          </p>
+        </div>
       ) : null}
       {error ? <p className="form-error">{error}</p> : null}
     </section>

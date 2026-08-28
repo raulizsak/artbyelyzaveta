@@ -2,7 +2,14 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  KeyRound,
+  Plus,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type Factor = { id: string; friendly_name?: string; status: string };
@@ -14,22 +21,39 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
     ? params.get("next")!
     : "/account/security";
   const [factors, setFactors] = useState<Factor[]>([]);
-  const [factorId, setFactorId] = useState("");
+  const [enrollmentFactorId, setEnrollmentFactorId] = useState("");
+  const [verifyingFactorId, setVerifyingFactorId] = useState("");
   const [qr, setQr] = useState("");
   const [secret, setSecret] = useState("");
-  const [code, setCode] = useState("");
+  const [enrollmentCode, setEnrollmentCode] = useState("");
+  const [sessionCode, setSessionCode] = useState("");
+  const [currentAal, setCurrentAal] = useState<"aal1" | "aal2">("aal1");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function refresh() {
-    const { data } = await createClient().auth.mfa.listFactors();
-    setFactors((data?.totp ?? []) as Factor[]);
-  }
+  const refresh = useCallback(async () => {
+    const supabase = createClient();
+    const [{ data }, assurance] = await Promise.all([
+      supabase.auth.mfa.listFactors(),
+      supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    ]);
+    const available = (data?.totp ?? []) as Factor[];
+    setFactors(available);
+    setCurrentAal(assurance.data?.currentLevel === "aal2" ? "aal2" : "aal1");
+    if (
+      isAdmin &&
+      next.startsWith("/admin") &&
+      assurance.data?.currentLevel !== "aal2"
+    ) {
+      const verified = available.find((factor) => factor.status === "verified");
+      if (verified) setVerifyingFactorId(verified.id);
+    }
+  }, [isAdmin, next]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void refresh(), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [refresh]);
 
   async function enroll() {
     setBusy(true);
@@ -43,46 +67,69 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
     if (enrollError || !data)
       setError("We couldn't start authenticator setup. Please try again.");
     else {
-      setFactorId(data.id);
+      setEnrollmentFactorId(data.id);
       setQr(data.totp.qr_code);
       setSecret(data.totp.secret);
     }
     setBusy(false);
   }
 
-  async function verify(id = factorId) {
-    if (!/^\d{6}$/.test(code)) {
+  async function verifySession(id: string) {
+    if (!/^\d{6}$/.test(sessionCode)) {
       setError("Enter the current 6-digit code from your authenticator app.");
       return;
     }
     setBusy(true);
     setError("");
     const supabase = createClient();
-    const challenge = await supabase.auth.mfa.challenge({ factorId: id });
-    if (challenge.error || !challenge.data)
-      setError("We couldn't start verification. Please try again.");
+    const result = await supabase.auth.mfa.challengeAndVerify({
+      factorId: id,
+      code: sessionCode,
+    });
+    if (result.error)
+      setError(
+        "That code wasn't accepted. Wait for a fresh code and try again.",
+      );
     else {
-      const result = await supabase.auth.mfa.verify({
-        factorId: id,
-        challengeId: challenge.data.id,
-        code,
-      });
-      if (result.error)
-        setError(
-          "That code wasn't accepted. Wait for a fresh code and try again.",
-        );
-      else {
-        await refresh();
-        router.replace(next);
-        router.refresh();
-      }
+      setSessionCode("");
+      await refresh();
+      router.replace(next);
+      router.refresh();
+    }
+    setBusy(false);
+  }
+
+  async function verifyEnrollment() {
+    if (!/^\d{6}$/.test(enrollmentCode)) {
+      setError("Enter the current 6-digit code from your authenticator app.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    const result = await createClient().auth.mfa.challengeAndVerify({
+      factorId: enrollmentFactorId,
+      code: enrollmentCode,
+    });
+    if (result.error)
+      setError(
+        "That code wasn't accepted. Wait for a fresh code and try again.",
+      );
+    else {
+      setQr("");
+      setSecret("");
+      setEnrollmentCode("");
+      setEnrollmentFactorId("");
+      await refresh();
+      router.refresh();
     }
     setBusy(false);
   }
 
   async function remove(id: string) {
+    const target = factors.find((factor) => factor.id === id);
     if (
       isAdmin &&
+      target?.status === "verified" &&
       factors.filter((factor) => factor.status === "verified").length <= 1
     ) {
       setError(
@@ -109,32 +156,108 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
         Use an authenticator app to protect your account. Administrators must
         verify a current code before every sensitive session.
       </p>
+      <div className={`security-assurance security-assurance--${currentAal}`}>
+        {currentAal === "aal2" ? <ShieldCheck /> : <KeyRound />}
+        <span>
+          <strong>
+            {currentAal === "aal2"
+              ? "This session is verified"
+              : "This session needs an authenticator code"}
+          </strong>
+          <small>
+            {currentAal === "aal2"
+              ? "Sensitive account and admin actions are available."
+              : "Verify one of your enrolled authenticators below to continue."}
+          </small>
+        </span>
+      </div>
       {factors.map((factor) => (
-        <div className="security-factor" key={factor.id}>
-          <span>
-            <strong>{factor.friendly_name ?? "Authenticator"}</strong>
-            <small>{factor.status}</small>
-          </span>
+        <article className="security-factor" key={factor.id}>
+          <div className="security-factor__summary">
+            <CheckCircle2 aria-hidden="true" />
+            <span>
+              <strong>{factor.friendly_name ?? "Authenticator"}</strong>
+              <small>
+                {factor.status === "verified"
+                  ? "Verified authenticator"
+                  : factor.status}
+              </small>
+            </span>
+          </div>
           {factor.status === "verified" ? (
-            <>
+            <div className="security-factor__actions">
               <button
                 className="secondary-action"
-                onClick={() => verify(factor.id)}
+                onClick={() => {
+                  setVerifyingFactorId(factor.id);
+                  setError("");
+                }}
                 type="button"
               >
                 Verify this session
               </button>
               <button
-                className="text-button"
+                aria-label={`Remove ${factor.friendly_name ?? "authenticator"}`}
+                className="text-button text-button--danger"
                 disabled={busy}
                 onClick={() => remove(factor.id)}
                 type="button"
               >
-                Remove
+                <Trash2 aria-hidden="true" size={15} /> Remove
               </button>
-            </>
+            </div>
+          ) : (
+            <button
+              className="text-button text-button--danger"
+              disabled={busy}
+              onClick={() => remove(factor.id)}
+              type="button"
+            >
+              <Trash2 aria-hidden="true" size={15} /> Remove incomplete setup
+            </button>
+          )}
+          {verifyingFactorId === factor.id ? (
+            <form
+              className="mfa-session-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void verifySession(factor.id);
+              }}
+            >
+              <label className="form-field">
+                <span>Current 6-digit code</span>
+                <input
+                  autoComplete="one-time-code"
+                  autoFocus
+                  inputMode="numeric"
+                  maxLength={6}
+                  onChange={(event) =>
+                    setSessionCode(event.target.value.replace(/\D/g, ""))
+                  }
+                  pattern="[0-9]{6}"
+                  required
+                  value={sessionCode}
+                />
+              </label>
+              <div className="button-row">
+                <button
+                  className="primary-action"
+                  disabled={busy}
+                  type="submit"
+                >
+                  {busy ? "Verifying…" : "Verify code"}
+                </button>
+                <button
+                  className="text-button"
+                  onClick={() => setVerifyingFactorId("")}
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           ) : null}
-        </div>
+        </article>
       ))}
       {!qr ? (
         <button
@@ -143,7 +266,7 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
           onClick={enroll}
           type="button"
         >
-          Add authenticator
+          <Plus aria-hidden="true" size={17} /> Add authenticator
         </button>
       ) : (
         <div className="mfa-enrolment">
@@ -164,17 +287,21 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
               autoComplete="one-time-code"
               inputMode="numeric"
               maxLength={6}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              value={code}
+              onChange={(e) =>
+                setEnrollmentCode(e.target.value.replace(/\D/g, ""))
+              }
+              pattern="[0-9]{6}"
+              required
+              value={enrollmentCode}
             />
           </label>
           <button
             className="primary-action"
             disabled={busy}
-            onClick={() => verify()}
+            onClick={verifyEnrollment}
             type="button"
           >
-            Verify authenticator
+            Verify and add authenticator
           </button>
         </div>
       )}
