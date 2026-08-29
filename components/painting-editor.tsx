@@ -4,6 +4,7 @@ import Image from "next/image";
 import { GripVertical, ImagePlus, Star, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { mediaPositionToken } from "@/lib/painting-media";
 import { formatDisplayValue } from "@/lib/presentation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -155,6 +156,11 @@ export function PaintingEditor({
   const [existingMedia, setExistingMedia] = useState(
     [...initialMedia].sort((a, b) => a.position - b.position),
   );
+  const initialMediaOrder = useRef(
+    [...initialMedia]
+      .sort((a, b) => a.position - b.position)
+      .map((item) => item.groupKey),
+  );
   const [removedMedia, setRemovedMedia] = useState<string[]>([]);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const previewUrls = useRef(new Set<string>());
@@ -260,6 +266,8 @@ export function PaintingEditor({
     const supabase = createClient();
     const records: Record<string, unknown>[] = [];
     const uploadedGroupKeys: string[] = [];
+    const uploadPositionBase =
+      Math.max(-1, ...initialMedia.map((item) => item.position)) + 1;
     for (let position = 0; position < pendingImages.length; position += 1) {
       const { file } = pendingImages[position];
       if (file.size > 20 * 1024 * 1024)
@@ -269,7 +277,10 @@ export function PaintingEditor({
         throw new Error(`${file.name} has dimensions above 12,000 px.`);
       const mediaId = crypto.randomUUID();
       const groupKey = `${paintingId}/${mediaId}`;
-      const finalPosition = existingMedia.length + position;
+      // Use positions above every group that existed when the editor opened.
+      // This avoids colliding with a remaining legacy group when an earlier
+      // image is removed and a replacement is uploaded in the same save.
+      const finalPosition = uploadPositionBase + position;
       const kind = finalPosition === 0 ? "artwork" : "room";
       const extension =
         file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
@@ -319,7 +330,7 @@ export function PaintingEditor({
         );
       }
       bitmap.close();
-      uploadedGroupKeys.push(groupKey);
+      uploadedGroupKeys.push(mediaPositionToken(finalPosition));
     }
     if (records.length) {
       const response = await fetch(`/api/admin/paintings/${paintingId}/media`, {
@@ -333,6 +344,19 @@ export function PaintingEditor({
   }
 
   async function saveMediaChanges(paintingId: string) {
+    const currentOrder = existingMedia.map((item) => item.groupKey);
+    const orderChanged =
+      currentOrder.length !== initialMediaOrder.current.length ||
+      currentOrder.some(
+        (groupKey, index) => groupKey !== initialMediaOrder.current[index],
+      );
+    if (
+      !removedMedia.length &&
+      !pendingImages.length &&
+      !orderChanged
+    )
+      return;
+
     for (const groupKey of removedMedia) {
       const response = await fetch(`/api/admin/paintings/${paintingId}/media`, {
         method: "DELETE",

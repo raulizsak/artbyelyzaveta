@@ -5,6 +5,7 @@ import {
 } from "@/components/painting-editor";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { paintingInputSchema } from "@/lib/painting-admin";
+import { mediaPositionToken } from "@/lib/painting-media";
 import { createAdminClient } from "@/lib/supabase/admin";
 export default async function Page({
   params,
@@ -23,23 +24,25 @@ export default async function Page({
     .pick({ orientation: true, status: true })
     .parse({ orientation: data.orientation, status: data.status });
   const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/storage/v1/object/public/artwork-public/`;
-  const mediaGroups = new Map<string, typeof data.painting_media>();
+  const mediaGroups = new Map<number, typeof data.painting_media>();
   for (const media of data.painting_media) {
     if (media.variant === "original") continue;
-    const groupKey = media.storage_path.split("/").slice(0, -1).join("/");
-    mediaGroups.set(groupKey, [...(mediaGroups.get(groupKey) ?? []), media]);
+    mediaGroups.set(media.position, [
+      ...(mediaGroups.get(media.position) ?? []),
+      media,
+    ]);
   }
   const initialMedia: PaintingEditorMedia[] = [...mediaGroups.entries()]
-    .map(([groupKey, variants]) => {
+    .map(([position, variants]) => {
       const preview =
         variants.find((item) => item.variant === "card") ??
         variants.find((item) => item.variant === "main") ??
         variants[0];
       return {
         alt: preview.alt_text,
-        groupKey,
+        groupKey: mediaPositionToken(position),
         kind: preview.kind as PaintingEditorMedia["kind"],
-        position: preview.position,
+        position,
         src: `${storageBase}${preview.storage_path}`,
       };
     })

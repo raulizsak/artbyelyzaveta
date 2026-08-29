@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAccountIdentity } from "@/lib/auth/authorization";
+import { parseMediaPositionToken } from "@/lib/painting-media";
 import { syncPaintingCatalog } from "@/lib/stripe/catalog";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -93,7 +94,9 @@ export async function PATCH(
   if (
     !z.uuid().safeParse(id).success ||
     !parsed.success ||
-    parsed.data.groupKeys.some((key) => !key.startsWith(`${id}/`))
+    parsed.data.groupKeys.some(
+      (key) => parseMediaPositionToken(key) === null,
+    )
   )
     return NextResponse.json({ error: "Invalid image order" }, { status: 400 });
 
@@ -128,22 +131,22 @@ export async function DELETE(
     );
   const id = (await params).id;
   const parsed = removeSchema.safeParse(await request.json());
+  const position = parsed.success
+    ? parseMediaPositionToken(parsed.data.groupKey)
+    : null;
   if (
     !z.uuid().safeParse(id).success ||
     !parsed.success ||
-    !parsed.data.groupKey.startsWith(`${id}/`) ||
-    parsed.data.groupKey.split("/").length !== 2 ||
-    !z.uuid().safeParse(parsed.data.groupKey.split("/")[1]).success
+    position === null
   )
     return NextResponse.json({ error: "Invalid image" }, { status: 400 });
 
   const admin = createAdminClient();
-  const prefix = `${parsed.data.groupKey}/`;
   const { data: media, error: readError } = await admin
     .from("painting_media")
     .select("id, storage_path, variant")
     .eq("painting_id", id)
-    .like("storage_path", `${prefix}%`);
+    .eq("position", position);
   if (readError || !media?.length)
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
 
@@ -167,7 +170,7 @@ export async function DELETE(
     .from("painting_media")
     .delete()
     .eq("painting_id", id)
-    .like("storage_path", `${prefix}%`);
+    .eq("position", position);
   if (deleteError)
     return NextResponse.json({ error: "Image details not removed" }, { status: 503 });
 
