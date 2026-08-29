@@ -251,7 +251,25 @@ export async function POST(request: Request) {
       totalCents: reservation.total_cents,
       discounts: reservation.discounts,
     });
-  } catch {
+  } catch (error) {
+    const checkoutError = error as {
+      name?: string;
+      message?: string;
+      type?: string;
+      code?: string;
+      param?: string;
+      requestId?: string;
+      statusCode?: number;
+    };
+    console.error("checkout-session-creation-failed", {
+      name: checkoutError?.name,
+      message: checkoutError?.message,
+      type: checkoutError?.type,
+      code: checkoutError?.code,
+      param: checkoutError?.param,
+      requestId: checkoutError?.requestId,
+      statusCode: checkoutError?.statusCode,
+    });
     if (orderId)
       await createAdminClient().rpc("release_checkout_reservation", {
         p_order_id: orderId,
