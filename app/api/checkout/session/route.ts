@@ -83,6 +83,18 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     const input = parsed.data;
+    const { mode, stripe } = getCheckoutStripe();
+    let prices: Awaited<ReturnType<typeof getCheckoutPriceIds>>;
+    try {
+      prices = await getCheckoutPriceIds(input.paintingIds, mode);
+    } catch {
+      await Promise.all(
+        input.paintingIds.map((paintingId) =>
+          syncPaintingCatalog(paintingId),
+        ),
+      );
+      prices = await getCheckoutPriceIds(input.paintingIds, mode);
+    }
     const sessionClient = await createClient();
     const claimsResult = await sessionClient.auth.getClaims();
     const claims = claimsResult.data?.claims as
@@ -140,18 +152,6 @@ export async function POST(request: Request) {
     }
     orderId = reservation.order_id;
 
-    const { mode, stripe } = getCheckoutStripe();
-    let prices: Awaited<ReturnType<typeof getCheckoutPriceIds>>;
-    try {
-      prices = await getCheckoutPriceIds(input.paintingIds, mode);
-    } catch {
-      await Promise.all(
-        input.paintingIds.map((paintingId) =>
-          syncPaintingCatalog(paintingId),
-        ),
-      );
-      prices = await getCheckoutPriceIds(input.paintingIds, mode);
-    }
     let executionCoupon: Stripe.Coupon | null = null;
     if (reservation.discount_cents > 0) {
       executionCoupon = await stripe.coupons.create(
