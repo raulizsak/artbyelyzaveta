@@ -6,12 +6,21 @@ export function EmailInvoiceButton({ orderId }: { orderId: string }) {
   const [state, setState] = useState<"idle" | "busy" | "sent" | "error">(
     "idle",
   );
+  const [message, setMessage] = useState("");
   async function send() {
     setState("busy");
-    const response = await fetch(`/api/admin/orders/${orderId}/invoice-email`, {
-      method: "POST",
-    });
-    setState(response.ok ? "sent" : "error");
+    setMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${orderId}/invoice-email`,
+        { method: "POST" },
+      );
+      const body = (await response.json()) as { message?: string };
+      setMessage(body.message || "");
+      setState(response.ok ? "sent" : "error");
+    } catch {
+      setState("error");
+    }
   }
   return (
     <>
@@ -22,13 +31,16 @@ export function EmailInvoiceButton({ orderId }: { orderId: string }) {
         type="button"
       >
         {state === "busy"
-          ? "Queueing…"
+          ? "Sending through Stripe…"
           : state === "sent"
-            ? "Invoice email queued"
-            : "Email invoice"}
+            ? "Stripe invoice sent"
+            : "Send Stripe invoice"}
       </button>
+      {state === "sent" && message ? (
+        <p className="form-success-inline">{message}</p>
+      ) : null}
       {state === "error" ? (
-        <p className="form-error">Invoice email could not be queued.</p>
+        <p className="form-error">Stripe could not send the invoice.</p>
       ) : null}
     </>
   );

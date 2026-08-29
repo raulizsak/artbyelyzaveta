@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { triggerEmailOutbox } from "@/lib/email/outbox";
 import type { StripeMode } from "@/lib/env";
 import { syncPaintingCatalog } from "@/lib/stripe/catalog";
+import { ensureStripeInvoiceForOrder } from "@/lib/stripe/invoices";
 import { getStripe } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -43,11 +44,11 @@ function normalizedData(event: Stripe.Event) {
       payment_intent_id:
         typeof session.payment_intent === "string"
           ? session.payment_intent
-          : session.payment_intent?.id ?? null,
+          : (session.payment_intent?.id ?? null),
       customer_id:
         typeof session.customer === "string"
           ? session.customer
-          : session.customer?.id ?? null,
+          : (session.customer?.id ?? null),
       payment_status: session.payment_status,
       amount_total: session.amount_total,
       amount_discount: session.total_details?.amount_discount ?? 0,
@@ -60,6 +61,10 @@ function normalizedData(event: Stripe.Event) {
     return {
       order_id: intent.metadata.order_id ?? null,
       payment_intent_id: intent.id,
+      customer_id:
+        typeof intent.customer === "string"
+          ? intent.customer
+          : (intent.customer?.id ?? null),
       amount_total: intent.amount_received || intent.amount,
       currency: intent.currency,
     };
@@ -72,7 +77,7 @@ function normalizedData(event: Stripe.Event) {
       payment_intent_id:
         typeof refund.payment_intent === "string"
           ? refund.payment_intent
-          : refund.payment_intent?.id ?? null,
+          : (refund.payment_intent?.id ?? null),
       amount_refunded: refund.amount,
       refund_status: refund.status,
       reason: refund.reason,
@@ -86,7 +91,7 @@ function normalizedData(event: Stripe.Event) {
       payment_intent_id:
         typeof charge.payment_intent === "string"
           ? charge.payment_intent
-          : charge.payment_intent?.id ?? null,
+          : (charge.payment_intent?.id ?? null),
       amount_refunded: charge.amount_refunded,
       refund_status: charge.refunded ? "succeeded" : "pending",
       refund_id: charge.refunds?.data[0]?.id ?? null,
@@ -117,15 +122,18 @@ export async function POST(request: Request) {
     return new Response("Event processing failed", { status: 500 });
 
   const orderId = typeof data.order_id === "string" ? data.order_id : null;
-  if (orderId && (result as { status?: string } | null)?.status === "processed") {
+  const resultStatus = (result as { status?: string } | null)?.status;
+  const isPaymentSuccess =
+    [
+      "checkout.session.completed",
+      "checkout.session.async_payment_succeeded",
+      "payment_intent.succeeded",
+    ].includes(verified.event.type) &&
+    (verified.event.type !== "checkout.session.completed" ||
+      data.payment_status === "paid");
+  if (orderId && resultStatus === "processed") {
     await triggerEmailOutbox(orderId);
-    if (
-      [
-        "checkout.session.completed",
-        "checkout.session.async_payment_succeeded",
-        "payment_intent.succeeded",
-      ].includes(verified.event.type)
-    ) {
+    if (isPaymentSuccess) {
       const { data: items } = await admin
         .from("order_items")
         .select("painting_id")
@@ -134,6 +142,15 @@ export async function POST(request: Request) {
       await Promise.all(
         (items ?? []).map((item) => syncPaintingCatalog(item.painting_id!)),
       );
+    }
+  }
+  if (orderId && isPaymentSuccess) {
+    try {
+      await ensureStripeInvoiceForOrder(orderId, verified.mode);
+    } catch {
+      // Stripe will retry. Invoice creation is independently idempotent, including
+      // when the commerce state transition was already processed on the first attempt.
+      return new Response("Invoice processing failed", { status: 500 });
     }
   }
   return Response.json({ received: true });

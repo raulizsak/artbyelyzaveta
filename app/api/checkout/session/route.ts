@@ -28,9 +28,26 @@ const discountErrors: Record<string, string> = {
   discount_expired: "This discount code has expired.",
   discount_not_applicable: "This discount code doesn't apply to this painting.",
   discount_usage_limit: "This discount code has reached its usage limit.",
-  discount_customer_limit: "This discount code has already been used for this email address.",
-  discount_minimum_not_met: "This order doesn't meet the discount's minimum amount.",
+  discount_customer_limit:
+    "This discount code has already been used for this email address.",
+  discount_minimum_not_met:
+    "This order doesn't meet the discount's minimum amount.",
   discount_not_combinable: "These discount codes can't be combined.",
+};
+
+const stripeCountryCode = (country: string) => {
+  const value = country.trim();
+  if (/^[a-z]{2}$/i.test(value)) return value.toUpperCase();
+  return (
+    {
+      australia: "AU",
+      "new zealand": "NZ",
+      "united kingdom": "GB",
+      "united states": "US",
+      canada: "CA",
+      ireland: "IE",
+    } as Record<string, string>
+  )[value.toLowerCase()];
 };
 
 export async function POST(request: Request) {
@@ -105,7 +122,8 @@ export async function POST(request: Request) {
         error?.message?.includes(key),
       );
       const unavailable =
-        error?.code === "P0002" || error?.message?.includes("painting_unavailable");
+        error?.code === "P0002" ||
+        error?.message?.includes("painting_unavailable");
       return NextResponse.json(
         {
           error: errorKey
@@ -128,7 +146,9 @@ export async function POST(request: Request) {
           duration: "once",
           amount_off: reservation.discount_cents,
           currency: reservation.currency.toLowerCase(),
-          name: reservation.discounts.map((discount) => discount.code).join(" + "),
+          name: reservation.discounts
+            .map((discount) => discount.code)
+            .join(" + "),
           metadata: {
             order_id: orderId,
             discount_codes: reservation.discounts
@@ -145,15 +165,43 @@ export async function POST(request: Request) {
     }
 
     const siteUrl = process.env.SITE_URL?.trim() || new URL(request.url).origin;
+    const stripeCustomer = await stripe.customers.create(
+      {
+        email: input.email,
+        name: `${input.firstName} ${input.lastName}`.trim(),
+        phone: input.phone || undefined,
+        address:
+          input.delivery === "shipping"
+            ? {
+                line1: input.address,
+                city: input.suburb,
+                state: input.state,
+                postal_code: input.postcode,
+                country: stripeCountryCode(input.country),
+              }
+            : undefined,
+        metadata: {
+          order_id: orderId,
+          order_reference: reservation.order_reference,
+          stripe_mode: mode,
+        },
+      },
+      { idempotencyKey: `checkout-customer-${mode}-${orderId}` },
+    );
     const session = await stripe.checkout.sessions.create(
       {
         ui_mode: "custom",
         mode: "payment",
-        customer_email: input.email,
+        customer: stripeCustomer.id,
         return_url: `${siteUrl}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-        line_items: prices.map((entry) => ({ quantity: 1, price: entry.priceId })),
-        discounts: executionCoupon ? [{ coupon: executionCoupon.id }] : undefined,
+        line_items: prices.map((entry) => ({
+          quantity: 1,
+          price: entry.priceId,
+        })),
+        discounts: executionCoupon
+          ? [{ coupon: executionCoupon.id }]
+          : undefined,
         shipping_options:
           reservation.shipping_cents > 0
             ? [
@@ -171,7 +219,9 @@ export async function POST(request: Request) {
               ]
             : undefined,
         metadata: { order_id: orderId, stripe_mode: mode },
-        payment_intent_data: { metadata: { order_id: orderId, stripe_mode: mode } },
+        payment_intent_data: {
+          metadata: { order_id: orderId, stripe_mode: mode },
+        },
       },
       { idempotencyKey: `checkout-${orderId}` },
     );
@@ -186,9 +236,7 @@ export async function POST(request: Request) {
         p_payment_intent_id: (typeof session.payment_intent === "string"
           ? session.payment_intent
           : null) as unknown as string,
-        p_stripe_customer_id: (typeof session.customer === "string"
-          ? session.customer
-          : null) as unknown as string,
+        p_stripe_customer_id: stripeCustomer.id,
       },
     );
     if (attachError) throw attachError;

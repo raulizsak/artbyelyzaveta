@@ -3045,6 +3045,31 @@ blockquote {
   display: grid;
   gap: 1rem;
 }
+.stripe-payment {
+  background: #fffdf8;
+  border: 1px solid #d9ceb8;
+  border-radius: 9px;
+  color: var(--charcoal);
+  padding: 1.15rem;
+}
+.stripe-payment .mock-confirm {
+  grid-column: 1;
+  margin-top: 0.25rem;
+}
+.pay-art-icons {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.28rem;
+}
+.mock-payment-panel .payment-security-note {
+  align-items: center;
+  color: #5f6548;
+  display: flex;
+  font-size: 0.76rem;
+  gap: 0.45rem;
+  line-height: 1.45;
+  margin: -0.25rem 0 0;
+}
 .security-factor {
   border-block-end: 1px solid var(--border);
   justify-content: space-between;

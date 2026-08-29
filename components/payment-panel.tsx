@@ -6,7 +6,7 @@ import {
   useCheckoutElements,
 } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { LockKeyhole, Paintbrush, Palette, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatMoney } from "@/lib/catalog";
@@ -72,13 +72,21 @@ function PaymentForm({
         onClick={confirm}
         type="button"
       >
-        <ShieldCheck aria-hidden="true" size={17} />
+        <span aria-hidden="true" className="pay-art-icons">
+          <Paintbrush size={16} />
+          <Palette size={16} />
+        </span>
         {busy
           ? "Confirming…"
           : mode === "test"
             ? "Pay securely in test mode"
             : "Pay securely"}
       </button>
+      <p className="payment-security-note">
+        <LockKeyhole aria-hidden="true" size={14} />
+        Payments are processed securely by Stripe. Art by Elyzaveta never sees
+        or stores your card details.
+      </p>
       {error ? (
         <p className="form-error" role="alert">
           {error}
@@ -109,7 +117,9 @@ export function StripePaymentPanel({
   const [error, setError] = useState("");
   const stripe = useMemo(() => {
     const prefix = mode === "live" ? "pk_live_" : "pk_test_";
-    return publishableKey.startsWith(prefix) ? loadStripe(publishableKey) : null;
+    return publishableKey.startsWith(prefix)
+      ? loadStripe(publishableKey)
+      : null;
   }, [mode, publishableKey]);
 
   async function prepare() {
@@ -177,7 +187,27 @@ export function StripePaymentPanel({
               elementsOptions: {
                 appearance: {
                   theme: "stripe",
-                  variables: { colorPrimary: "#5f6548", borderRadius: "7px" },
+                  variables: {
+                    colorPrimary: "#5f6548",
+                    colorBackground: "#fffdf8",
+                    colorText: "#23261f",
+                    colorDanger: "#9a403a",
+                    colorTextSecondary: "#6d6b61",
+                    fontFamily: "Arial, sans-serif",
+                    borderRadius: "7px",
+                    spacingUnit: "4px",
+                  },
+                  rules: {
+                    ".Input": {
+                      border: "1px solid #d9ceb8",
+                      boxShadow: "none",
+                    },
+                    ".Input:focus": {
+                      border: "1px solid #5f6548",
+                      boxShadow: "0 0 0 1px #5f6548",
+                    },
+                    ".Label": { color: "#4d5143", fontWeight: "500" },
+                  },
                 },
               },
             }}

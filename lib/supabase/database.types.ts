@@ -501,29 +501,47 @@ export type Database = {
       invoices: {
         Row: {
           created_at: string;
+          hosted_invoice_url: string | null;
           id: string;
+          invoice_pdf_url: string | null;
           invoice_reference: string;
           issued_at: string;
           order_id: string;
+          sent_at: string | null;
           storage_path: string | null;
+          stripe_invoice_id: string | null;
+          stripe_mode: string | null;
+          stripe_status: string | null;
           version: number;
         };
         Insert: {
           created_at?: string;
+          hosted_invoice_url?: string | null;
           id?: string;
+          invoice_pdf_url?: string | null;
           invoice_reference: string;
           issued_at?: string;
           order_id: string;
+          sent_at?: string | null;
           storage_path?: string | null;
+          stripe_invoice_id?: string | null;
+          stripe_mode?: string | null;
+          stripe_status?: string | null;
           version?: number;
         };
         Update: {
           created_at?: string;
+          hosted_invoice_url?: string | null;
           id?: string;
+          invoice_pdf_url?: string | null;
           invoice_reference?: string;
           issued_at?: string;
           order_id?: string;
+          sent_at?: string | null;
           storage_path?: string | null;
+          stripe_invoice_id?: string | null;
+          stripe_mode?: string | null;
+          stripe_status?: string | null;
           version?: number;
         };
         Relationships: [
