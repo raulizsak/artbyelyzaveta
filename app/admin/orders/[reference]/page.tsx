@@ -52,7 +52,9 @@ export default async function Page({
       </Link>
       <div className="section-heading">
         <div>
-          <p className="eyebrow">{order.order_type} order</p>
+          <p className="eyebrow">
+            {formatDisplayValue(`${order.order_type} order`)}
+          </p>
           <h1>
             {order.order_reference}{" "}
             {order.is_demo ? <span className="demo-badge">DEMO</span> : null}
@@ -104,14 +106,27 @@ export default async function Page({
               </div>
             ) : null}
             <div className="financial-breakdown__total">
-              <dt>Total paid</dt>
+              <dt>Order total</dt>
+              <dd>{formatMoney(order.total_cents, order.currency)}</dd>
+            </div>
+            <div>
+              <dt>Amount paid</dt>
               <dd>
                 {formatMoney(
-                  order.amount_paid_cents ?? order.total_cents,
+                  order.amount_paid_cents ??
+                    (order.paid_at ? order.total_cents : 0),
                   order.currency,
                 )}
               </dd>
             </div>
+            {order.amount_refunded_cents > 0 ? (
+              <div>
+                <dt>Amount refunded</dt>
+                <dd>
+                  {formatMoney(order.amount_refunded_cents, order.currency)}
+                </dd>
+              </div>
+            ) : null}
           </dl>
         </article>
         <article>
