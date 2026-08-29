@@ -203,7 +203,7 @@ export async function POST(request: Request) {
     );
     const session = await stripe.checkout.sessions.create(
       {
-        ui_mode: "custom",
+        ui_mode: "elements",
         mode: "payment",
         customer: stripeCustomer.id,
         return_url: `${siteUrl}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
