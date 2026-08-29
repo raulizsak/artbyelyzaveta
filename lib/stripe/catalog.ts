@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import type Stripe from "stripe";
 import { getStripeSecretKey, type StripeMode } from "@/lib/env";
 import { publicArtworkUrl } from "@/lib/media-url";
@@ -13,6 +14,12 @@ export type CatalogSyncResult = {
 };
 
 const modes: StripeMode[] = ["test", "live"];
+
+const fingerprint = (value: unknown) =>
+  createHash("sha256")
+    .update(JSON.stringify(value))
+    .digest("hex")
+    .slice(0, 16);
 
 async function findProduct(
   stripe: Stripe,
@@ -104,7 +111,9 @@ export async function syncPaintingCatalog(
         } else {
           product = await stripe.products.create(
             productInput as Stripe.ProductCreateParams,
-            { idempotencyKey: `painting-product-${painting.id}` },
+            {
+              idempotencyKey: `painting-product-${painting.id}-${fingerprint(productInput)}`,
+            },
           );
         }
 
@@ -117,28 +126,43 @@ export async function syncPaintingCatalog(
           price.currency.toUpperCase() === painting.currency;
         if (!priceMatches) {
           const oldPrice = price;
-          price = await stripe.prices.create(
-            {
-              product: product.id,
-              currency: painting.currency.toLowerCase(),
-              unit_amount: painting.price_cents,
-              active: shouldBeActive,
-              metadata: {
-                painting_id: painting.id,
-                painting_slug: painting.slug,
-              },
+          const priceInput: Stripe.PriceCreateParams = {
+            product: product.id,
+            currency: painting.currency.toLowerCase(),
+            unit_amount: painting.price_cents,
+            active: true,
+            metadata: {
+              painting_id: painting.id,
+              painting_slug: painting.slug,
             },
+          };
+          price = await stripe.prices.create(
+            priceInput,
             {
-              idempotencyKey: `painting-price-${painting.id}-${painting.currency}-${painting.price_cents}`,
+              idempotencyKey: `painting-price-${painting.id}-${fingerprint(priceInput)}`,
             },
           );
+          price = await stripe.prices.retrieve(price.id);
+          if (!price.active)
+            price = await stripe.prices.update(price.id, { active: true });
           await stripe.products.update(product.id, { default_price: price.id });
           if (oldPrice?.active)
             await stripe.prices.update(oldPrice.id, { active: false });
-        } else if (price && price.active !== shouldBeActive) {
-          price = await stripe.prices.update(price.id, {
-            active: shouldBeActive,
-          });
+          if (!shouldBeActive)
+            price = await stripe.prices.update(price.id, { active: false });
+        } else if (price) {
+          if (shouldBeActive && !price.active)
+            price = await stripe.prices.update(price.id, { active: true });
+          const defaultPriceId =
+            typeof product.default_price === "string"
+              ? product.default_price
+              : product.default_price?.id;
+          if (shouldBeActive && defaultPriceId !== price.id)
+            await stripe.products.update(product.id, {
+              default_price: price.id,
+            });
+          if (!shouldBeActive && price.active)
+            price = await stripe.prices.update(price.id, { active: false });
         }
 
         const status = shouldBeActive ? "synced" : "inactive";
@@ -158,7 +182,12 @@ export async function syncPaintingCatalog(
           { onConflict: "painting_id,mode" },
         );
         return { mode, status };
-      } catch {
+      } catch (error) {
+        console.error("stripe-catalog-sync-failed", {
+          paintingId,
+          mode,
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
         await admin.from("painting_stripe_catalog").upsert(
           {
             painting_id: paintingId,

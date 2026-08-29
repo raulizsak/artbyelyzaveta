@@ -3,7 +3,10 @@ import type Stripe from "stripe";
 import { checkoutSchema } from "@/lib/checkout";
 import { getPaymentMode, isStripeCheckoutEnabled } from "@/lib/env";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import { getCheckoutPriceIds } from "@/lib/stripe/catalog";
+import {
+  getCheckoutPriceIds,
+  syncPaintingCatalog,
+} from "@/lib/stripe/catalog";
 import { getCheckoutStripe } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -138,7 +141,17 @@ export async function POST(request: Request) {
     orderId = reservation.order_id;
 
     const { mode, stripe } = getCheckoutStripe();
-    const prices = await getCheckoutPriceIds(input.paintingIds, mode);
+    let prices: Awaited<ReturnType<typeof getCheckoutPriceIds>>;
+    try {
+      prices = await getCheckoutPriceIds(input.paintingIds, mode);
+    } catch {
+      await Promise.all(
+        input.paintingIds.map((paintingId) =>
+          syncPaintingCatalog(paintingId),
+        ),
+      );
+      prices = await getCheckoutPriceIds(input.paintingIds, mode);
+    }
     let executionCoupon: Stripe.Coupon | null = null;
     if (reservation.discount_cents > 0) {
       executionCoupon = await stripe.coupons.create(
