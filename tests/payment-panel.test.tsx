@@ -125,7 +125,6 @@ describe("embedded Stripe payment", () => {
     await prepare();
     await act(async () => button("Pay securely").click());
     expect(mocks.confirm).toHaveBeenCalledWith({
-      email: request.email,
       redirect: "if_required",
     });
     expect(mocks.push).toHaveBeenCalledWith(
@@ -135,7 +134,7 @@ describe("embedded Stripe payment", () => {
   });
 
   it.each(["test", "live"] as const)(
-    "uses the server-configured return URL in %s mode",
+    "uses the server-configured return URL and customer email in %s mode",
     async (mode) => {
       mocks.confirm.mockImplementation(async (options) => {
         if ("returnUrl" in options) {
@@ -143,11 +142,17 @@ describe("embedded Stripe payment", () => {
             "You cannot provide `returnUrl` to confirm() when `return_url` was already provided when creating the Checkout Session.",
           );
         }
+        if ("email" in options) {
+          throw new Error(
+            "You cannot set the `email` in confirm() because a `customer_email` or `customer` with an email is already set on the Checkout Session.",
+          );
+        }
         return { type: "success" };
       });
       await prepare(mode);
       await act(async () => button("Pay securely").click());
       expect(mocks.confirm.mock.calls[0][0]).not.toHaveProperty("returnUrl");
+      expect(mocks.confirm.mock.calls[0][0]).not.toHaveProperty("email");
       expect(mocks.push).toHaveBeenCalledWith(
         "/order-confirmation?session_id=cs_test_regression",
       );

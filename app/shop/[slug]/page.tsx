@@ -23,6 +23,7 @@ import {
   toCartPainting,
 } from "@/lib/catalog";
 import { getPaintingBySlug } from "@/lib/catalog-data";
+import { getPaymentMode } from "@/lib/env";
 
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -40,6 +41,7 @@ export default async function ProductPage({ params }: Props) {
   const painting = await getPaintingBySlug(slug);
   if (!painting) notFound();
   const cartPainting = toCartPainting(painting);
+  const paymentMode = getPaymentMode();
   return (
     <main id="main-content">
       <div className="product-breadcrumb shell">
@@ -102,8 +104,12 @@ export default async function ProductPage({ params }: Props) {
             <AddToCart buyNow painting={cartPainting} />
           </div>
           <p className="demo-note">
-            <LockKeyhole aria-hidden="true" size={15} /> Payments remain in
-            Stripe test mode until the separate production go-live approval.
+            <LockKeyhole aria-hidden="true" size={15} />
+            {paymentMode === "live"
+              ? "Secure payments processed by Stripe."
+              : paymentMode === "test"
+                ? "Stripe test mode. No real payment will be taken."
+                : "Preview checkout. No payment will be taken."}
           </p>
           <div className="assurance-list">
             <span>

@@ -54,7 +54,7 @@ function SetupForm() {
         onClick={confirm}
         type="button"
       >
-        {busy ? "Saving securely…" : "Save card in TEST MODE"}
+        {busy ? "Saving securely…" : "Save card in test mode"}
       </button>
       {error ? <p className="form-error">{error}</p> : null}
     </div>
@@ -133,8 +133,8 @@ export function PaymentMethodsManager({
         <div className="empty-state">
           <h2>No saved payment methods</h2>
           <p>
-            Saving a card is optional and uses Stripe&apos;s secure TEST MODE
-            form.
+            Saving a card is optional. Card details are handled securely by
+            Stripe.
           </p>
         </div>
       )}
@@ -161,12 +161,9 @@ export function PaymentMethodsManager({
         <div className="payment-availability-note">
           <LockKeyhole aria-hidden="true" />
           <p>
-            <strong>
-              Saved cards are not enabled during the private preview.
-            </strong>
+            <strong>Saved cards are currently unavailable.</strong>
             <br />
-            Checkout currently uses the clearly labelled demo flow, and no card
-            payment is taken.
+            You can enter your payment details securely during checkout.
           </p>
         </div>
       ) : null}

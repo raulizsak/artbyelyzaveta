@@ -31,13 +31,11 @@ export type CheckoutRequest = {
 function PaymentForm({
   amount,
   currency,
-  email,
   sessionId,
   mode,
 }: {
   amount: number;
   currency: string;
-  email: string;
   sessionId: string;
   mode: "test" | "live";
 }) {
@@ -69,11 +67,9 @@ function PaymentForm({
     const slowTimer = window.setTimeout(() => setSlow(true), 15000);
     let succeeded = false;
     try {
-      const confirmation = await checkout.confirm({
-        email,
-        redirect: "if_required",
-        // The session API already sets return_url. Stripe rejects a second URL here.
-      });
+      // Customer email and return_url are set server-side on the session.
+      // Stripe rejects either value being supplied again during confirmation.
+      const confirmation = await checkout.confirm({ redirect: "if_required" });
       if (confirmation.type === "error") {
         setError(
           confirmation.error.message ||
@@ -317,7 +313,6 @@ export function StripePaymentPanel({
             <PaymentForm
               amount={amount}
               currency={currency}
-              email={request.email}
               mode={mode}
               sessionId={sessionId}
             />
