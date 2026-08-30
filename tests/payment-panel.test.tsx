@@ -127,13 +127,33 @@ describe("embedded Stripe payment", () => {
     expect(mocks.confirm).toHaveBeenCalledWith({
       email: request.email,
       redirect: "if_required",
-      returnUrl: `${window.location.origin}/order-confirmation?session_id=cs_test_regression`,
     });
     expect(mocks.push).toHaveBeenCalledWith(
       "/order-confirmation?session_id=cs_test_regression",
     );
     expect(button("Opening confirmation").disabled).toBe(true);
   });
+
+  it.each(["test", "live"] as const)(
+    "uses the server-configured return URL in %s mode",
+    async (mode) => {
+      mocks.confirm.mockImplementation(async (options) => {
+        if ("returnUrl" in options) {
+          throw new Error(
+            "You cannot provide `returnUrl` to confirm() when `return_url` was already provided when creating the Checkout Session.",
+          );
+        }
+        return { type: "success" };
+      });
+      await prepare(mode);
+      await act(async () => button("Pay securely").click());
+      expect(mocks.confirm.mock.calls[0][0]).not.toHaveProperty("returnUrl");
+      expect(mocks.push).toHaveBeenCalledWith(
+        "/order-confirmation?session_id=cs_test_regression",
+      );
+      expect(container.textContent).not.toContain("couldn't confirm");
+    },
+  );
 
   it.each(["throw", "reject"])(
     "recovers from a Stripe %s without claiming the payment failed",

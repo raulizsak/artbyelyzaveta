@@ -72,7 +72,7 @@ function PaymentForm({
       const confirmation = await checkout.confirm({
         email,
         redirect: "if_required",
-        returnUrl: `${window.location.origin}${confirmationPath}`,
+        // The session API already sets return_url. Stripe rejects a second URL here.
       });
       if (confirmation.type === "error") {
         setError(
