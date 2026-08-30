@@ -3056,6 +3056,20 @@ blockquote {
   grid-column: 1;
   margin-top: 0.25rem;
 }
+.mock-payment-panel .stripe-payment__total {
+  color: var(--charcoal);
+  margin: 0;
+}
+.mock-payment-panel .stripe-payment .form-error {
+  color: #9a403a;
+}
+.mock-payment-panel .stripe-payment .form-help {
+  color: var(--muted);
+}
+.stripe-payment .form-error a,
+.stripe-payment .form-help a {
+  text-decoration: underline;
+}
 .pay-art-icons {
   align-items: center;
   display: inline-flex;

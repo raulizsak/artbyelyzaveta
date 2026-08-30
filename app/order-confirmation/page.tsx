@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, Mail, Sparkles } from "lucide-react";
+import { Check, Clock3, Mail, Sparkles } from "lucide-react";
 import { ClearPurchasedCart } from "@/components/clear-purchased-cart";
 import { formatMoney } from "@/lib/catalog";
+import { formatDisplayValue } from "@/lib/presentation";
 import {
   getOrderForConfirmation,
   getOrderForStripeSession,
@@ -12,17 +13,27 @@ export const metadata: Metadata = { title: "Order confirmation" };
 export default async function ConfirmationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reference?: string; session_id?: string; token?: string }>;
+  searchParams: Promise<{
+    reference?: string;
+    session_id?: string;
+    token?: string;
+  }>;
 }) {
   const query = await searchParams;
   const order = query.session_id
     ? await getOrderForStripeSession(query.session_id)
     : query.reference
       ? await getOrderForConfirmation({
-        reference: query.reference,
-        token: query.token,
-      })
+          reference: query.reference,
+          token: query.token,
+        })
       : null;
+  const confirmed = order?.isDemo || order?.paymentStatus === "paid";
+  const stopped =
+    order?.paymentStatus === "cancelled" || order?.paymentStatus === "failed";
+  const refunded =
+    order?.paymentStatus === "refunded" ||
+    order?.paymentStatus === "partially_refunded";
   return (
     <main className="confirmation-page shell" id="main-content">
       {!order ? (
@@ -39,24 +50,34 @@ export default async function ConfirmationPage({
         </section>
       ) : (
         <section className="confirmation-card">
-          <ClearPurchasedCart />
+          {confirmed ? <ClearPurchasedCart /> : null}
           <div className="confirmation-mark">
-            <Check aria-hidden="true" />
+            {confirmed ? (
+              <Check aria-hidden="true" />
+            ) : (
+              <Clock3 aria-hidden="true" />
+            )}
           </div>
           <p className="eyebrow">
             {order.isDemo
               ? "Demo order confirmed"
               : order.paymentStatus === "paid"
                 ? "Payment confirmed"
-                : "Payment processing"}
+                : `Payment ${formatDisplayValue(order.paymentStatus)}`}
           </p>
-          <h1>Thank you, {order.firstName}.</h1>
+          <h1>
+            {confirmed ? `Thank you, ${order.firstName}.` : "Your order status"}
+          </h1>
           <p className="confirmation-lede">
             {order.isDemo
               ? "Your demo order is confirmed. No payment was taken. Elyzaveta will contact you about the delivery arrangement."
               : order.paymentStatus === "paid"
                 ? "Your order is confirmed. Elyzaveta will contact you about the delivery arrangement."
-                : "Stripe has returned you safely. We are waiting for the signed payment confirmation before marking the artwork as sold."}
+                : stopped
+                  ? "This checkout was cancelled, expired or unsuccessful. No completed payment is recorded for this order. You can return to your bag to start a new checkout."
+                  : refunded
+                    ? "A refund has been recorded for this order. Please check your order details or contact us if you need help."
+                    : "We haven't received a confirmed payment for this order yet. If you have just paid, wait a moment and refresh the status. Please do not submit another payment while the result is unclear."}
           </p>
           <p className="order-reference">
             Order <strong>{order.reference}</strong> ·{" "}
@@ -83,6 +104,19 @@ export default async function ConfirmationPage({
             </div>
           </div>
           <div className="button-row">
+            {!confirmed && !stopped && !refunded && query.session_id ? (
+              <a
+                className="cta-link"
+                href={`/order-confirmation?session_id=${encodeURIComponent(query.session_id)}`}
+              >
+                Refresh payment status
+              </a>
+            ) : null}
+            {stopped ? (
+              <Link className="cta-link" href="/cart">
+                Return to your bag
+              </Link>
+            ) : null}
             {order.item ? (
               <Link
                 className="cta-link"

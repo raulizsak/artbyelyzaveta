@@ -3,10 +3,7 @@ import type Stripe from "stripe";
 import { checkoutSchema } from "@/lib/checkout";
 import { getPaymentMode, isStripeCheckoutEnabled } from "@/lib/env";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import {
-  getCheckoutPriceIds,
-  syncPaintingCatalog,
-} from "@/lib/stripe/catalog";
+import { getCheckoutPriceIds, syncPaintingCatalog } from "@/lib/stripe/catalog";
 import { getCheckoutStripe } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -89,9 +86,7 @@ export async function POST(request: Request) {
       prices = await getCheckoutPriceIds(input.paintingIds, mode);
     } catch {
       await Promise.all(
-        input.paintingIds.map((paintingId) =>
-          syncPaintingCatalog(paintingId),
-        ),
+        input.paintingIds.map((paintingId) => syncPaintingCatalog(paintingId)),
       );
       prices = await getCheckoutPriceIds(input.paintingIds, mode);
     }
@@ -205,6 +200,8 @@ export async function POST(request: Request) {
       {
         ui_mode: "elements",
         mode: "payment",
+        // Keep the charge in the server-quoted currency used by order reconciliation.
+        adaptive_pricing: { enabled: false },
         customer: stripeCustomer.id,
         return_url: `${siteUrl}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
         expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
