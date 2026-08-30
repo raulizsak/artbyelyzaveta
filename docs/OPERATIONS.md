@@ -1,14 +1,14 @@
 # Operations
 
-> Current payment status and owner authorization are recorded in [Payment verification — 30 August 2026](PAYMENT_VERIFICATION_2026-08-30.md). The demo-phase payment statements below are historical and are superseded by that report.
+> Current payment verification and limitations are recorded in [Payment verification — 30 August 2026](PAYMENT_VERIFICATION_2026-08-30.md).
 
 ## Environments and cost boundary
 
 - Supabase project: `art-by-elyzaveta` (`fhxgcvdwvagqnxgydyca`), Sydney `ap-southeast-2`, Free.
 - Render: existing Free web service and `artbyelyzaveta.shop` domain.
-- Payments: `PAYMENT_MODE=demo`; no card collection and no Stripe API calls. Stripe architecture is retained but inactive.
+- Payments: `PAYMENT_MODE=live`, `ENABLE_LIVE_CHECKOUT=true`, `ENABLE_TEST_CHECKOUT=false`. Embedded Stripe checkout accepts real payments; the coming-soon homepage remains unchanged.
 - Email: live-recipient mode through the existing SMTP2GO account once its API/SMTP credentials are configured.
-- No paid branch, image transformation, hosting upgrade, or live payment is authorized.
+- The owner authorized live checkout. No paid scheduler, hosting upgrade, or operator-submitted real charge is authorized.
 
 Supabase Free can pause after low activity. Do not add keepalive traffic to defeat that limit. Reassess plan, backups, and support before real commerce launch.
 
@@ -42,17 +42,17 @@ The seed contains only fictional `.example.test` users and addresses. A reset is
 
 Future artwork processing happens in the admin browser: validate source dimensions/size, create deterministic WebP variants, and upload directly to Storage. Render must not proxy multi-megabyte masters or transform them per request.
 
-## Demo commerce mode
+## Historical demo commerce mode
 
-The current checkout calls the service-only `create_demo_order` RPC. It validates the painting and authoritative price, atomically reserves the one-of-one work, creates the real order/items/timeline/outbox records, marks the order paid and confirmed, and labels it `is_demo=true`. No Stripe Checkout Session, PaymentIntent, card form, or Stripe API call occurs.
+The former demo checkout called the service-only `create_demo_order` RPC. It validated the painting and authoritative price, atomically reserved the one-of-one work, created order/items/timeline/outbox records, marked the order paid and confirmed, and labelled it `is_demo=true`. No Stripe payment occurred. This endpoint is disabled in live mode; historical demo records remain labelled truthfully.
 
-Demo cancellation/refund uses the database-only demo RPC and can restock only when explicitly selected. `Reset demo order` is restricted to an AAL2 admin, preserves audit/order history, and restores the painting for repeat testing. The existing signed/idempotent Stripe webhook and checkout code remain dormant for a later separately approved activation.
+Historical demo cancellation/refund uses the database-only demo RPC and can restock only when explicitly selected. `Reset demo order` is restricted to an AAL2 admin and preserves audit/order history. Stripe orders instead use their stored test/live mode, signed webhooks, and Stripe-generated invoices.
 
 ## Email delivery and outbox
 
 Application and webhook transactions insert deduplicated `email_outbox` rows. The Render server claims a bounded batch atomically, renders the relevant customer/admin template, sends through the existing SMTP2GO SMTP user with STARTTLS, and records delivery state/provider ID. Contact and commission notifications use the same SMTP transport after their enquiry rows are safely stored.
 
-For this controlled demo phase use:
+Application order notifications use:
 
 ```text
 EMAIL_DELIVERY_MODE=live
@@ -76,7 +76,7 @@ Password-reset links return to `/reset-password`. Recheck redirects after any do
 ## Order operations
 
 - Fulfillment, tracking, customer status, internal notes, commission stage/ETA, returns, cancellation, and refund actions require admin AAL2.
-- Demo cancellations/refunds never call Stripe; future real paid cancellations use the retained Stripe refund/webhook workflow.
+- Historical demo cancellations/refunds never call Stripe. Stripe cancellations/refunds use the order's stored mode even after the active checkout mode changes. Unpaid sessions must be confirmed expired before restocking.
 - Restocking a one-of-one painting happens only after a full successful refund and an explicit restock choice.
 - Only AAL2 admins can use `Reset demo order`, and only when `is_demo=true`.
 - Shipped/delivered purchases use the return workflow rather than cancellation.

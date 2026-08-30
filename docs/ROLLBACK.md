@@ -1,5 +1,11 @@
 # Rollback
 
+## Live checkout — 30 August 2026
+
+Current payment release: `ab4b2bf`. If payment correctness is uncertain, keep `PAYMENT_MODE=live` and set `ENABLE_LIVE_CHECKOUT=false` and `ENABLE_TEST_CHECKOUT=false`, then redeploy. Do not switch to demo: that would enable non-payment orders. Preserve both webhook signing secrets and both Stripe keys so existing transactions/refunds can still reconcile. Never erase orders, refund records, or audit history. Investigate and apply a forward fix before re-enabling checkout.
+
+The sections below describe the historical demo cutover, not the current live-payment rollback procedure.
+
 ## Current demo release
 
 The Supabase/demo-commerce cutover is developed and released directly from `main`. Record the ending release commit before deployment. The previous known-good baseline is `796903a`; prefer a normal forward revert commit or a Render redeploy of a known-good commit rather than rewriting history.

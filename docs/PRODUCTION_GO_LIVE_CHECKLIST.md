@@ -31,11 +31,11 @@ Live checkout is owner-authorized after verification. See [Payment verification 
 
 ## Stripe and orders
 
-- [x] Current deployment is explicitly `PAYMENT_MODE=demo`; it collects no card details and makes no Stripe API/payment/refund call.
+- [x] Current deployment is `PAYMENT_MODE=live`, with live checkout enabled and test checkout disabled. No operator-submitted real charge was made during verification.
 - [x] Demo orders, refunds/cancellations, timeline events, email outbox entries, `DEMO` labels, and AAL2-only reset are database-backed.
-- [ ] All Stripe test keys/webhook secrets are removed or clearly separated from live configuration.
-- [ ] Create the live webhook only after approval, with the exact required events and HTTPS Edge Function URL.
-- [ ] Run live-mode configuration checks without making a real charge until an approved low-value end-to-end transaction plan exists.
+- [x] Stripe test and live keys/webhook secrets are explicitly separated; existing orders use their stored mode.
+- [x] Owner-approved Stripe webhook uses the HTTPS `/api/stripe/webhook` endpoint and verifies each mode with its own signing secret.
+- [x] Live embedded form, artwork-only coupon, Collection $0, and Shipping totals checked without submitting a charge; verification session cancelled safely.
 - [ ] Guest and account checkout, sold/reserved conflicts, concurrent reservation, price tampering, success, failure, expiry, and release pass.
 - [ ] Full/partial/excess/duplicate/failed refund scenarios pass; restock occurs only after explicit full successful refund.
 - [ ] Human order references never authorize access; guest token expiry and cross-order denial pass.
@@ -69,4 +69,4 @@ Live checkout is owner-authorized after verification. See [Payment verification 
 - [ ] Ending commit is pushed and reviewed; worktree is clean.
 - [ ] Exact rollback commit and operator are recorded.
 - [ ] Costs are confirmed before any plan change.
-- [ ] Explicit approval is given to enable live payments. The demo release already deploys from `main` behind the coming-soon homepage.
+- [x] Explicit owner approval given; live payments enabled on `main`. The coming-soon homepage remains unchanged.
