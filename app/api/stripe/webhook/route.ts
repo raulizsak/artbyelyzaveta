@@ -121,7 +121,9 @@ export async function POST(request: Request) {
   if (error || (result as { status?: string } | null)?.status === "failed")
     return new Response("Event processing failed", { status: 500 });
 
-  const orderId = typeof data.order_id === "string" ? data.order_id : null;
+  const processedOrderId = (result as { order_id?: string } | null)?.order_id;
+  const orderId =
+    typeof data.order_id === "string" ? data.order_id : processedOrderId;
   const resultStatus = (result as { status?: string } | null)?.status;
   const isPaymentSuccess =
     [
@@ -133,15 +135,37 @@ export async function POST(request: Request) {
       data.payment_status === "paid");
   if (orderId && resultStatus === "processed") {
     await triggerEmailOutbox(orderId);
-    if (isPaymentSuccess) {
-      const { data: items } = await admin
+  }
+  const canChangeInventory =
+    isPaymentSuccess ||
+    [
+      "refund.created",
+      "refund.updated",
+      "charge.refunded",
+      "checkout.session.expired",
+      "checkout.session.async_payment_failed",
+      "payment_intent.canceled",
+    ].includes(verified.event.type);
+  if (
+    orderId &&
+    canChangeInventory &&
+    ["processed", "duplicate"].includes(resultStatus ?? "")
+  ) {
+    try {
+      const { data: items, error: itemsError } = await admin
         .from("order_items")
         .select("painting_id")
         .eq("order_id", orderId)
         .not("painting_id", "is", null);
-      await Promise.all(
+      if (itemsError) throw itemsError;
+      const syncResults = await Promise.all(
         (items ?? []).map((item) => syncPaintingCatalog(item.painting_id!)),
       );
+      if (syncResults.flat().some((entry) => entry.status === "error"))
+        return new Response("Catalogue processing failed", { status: 500 });
+    } catch {
+      // Retry external side effects even when the database event is a duplicate.
+      return new Response("Catalogue processing failed", { status: 500 });
     }
   }
   if (orderId && isPaymentSuccess) {

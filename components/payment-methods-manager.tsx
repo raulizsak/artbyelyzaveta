@@ -72,9 +72,10 @@ export function PaymentMethodsManager({
   const [clientSecret, setClientSecret] = useState("");
   const [error, setError] = useState("");
   const stripe = useMemo(() => {
+    if (!enabled) return null;
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
     return key?.startsWith("pk_test_") ? loadStripe(key) : null;
-  }, []);
+  }, [enabled]);
   async function start() {
     setError("");
     const response = await fetch("/api/account/payment-methods/setup", {

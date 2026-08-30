@@ -10,6 +10,9 @@ vi.mock("../lib/orders/confirmation", () => ({
 vi.mock("../components/clear-purchased-cart", () => ({
   ClearPurchasedCart: () => <div data-clear-cart="true" />,
 }));
+vi.mock("../components/payment-status-refresh", () => ({
+  PaymentStatusRefresh: () => <div data-auto-refresh="true" />,
+}));
 
 beforeEach(() => {
   getOrder.mockReturnValue({
@@ -44,6 +47,7 @@ describe("payment status recovery", () => {
       expect(html).not.toContain("data-clear-cart");
       expect(html).not.toContain("Payment confirmed");
       expect(html).toContain("Refresh payment status");
+      expect(html).toContain("data-auto-refresh");
       expect(html).toContain("Please do not submit another payment");
     },
   );
@@ -54,6 +58,7 @@ describe("payment status recovery", () => {
       const html = await renderStatus(status);
       expect(html).not.toContain("data-clear-cart");
       expect(html).not.toContain("Refresh payment status");
+      expect(html).not.toContain("data-auto-refresh");
       expect(html).toContain("No completed payment is recorded");
       expect(html).toContain("Return to your bag");
     },
@@ -64,6 +69,7 @@ describe("payment status recovery", () => {
     expect(html).toContain("data-clear-cart");
     expect(html).toContain("Payment confirmed");
     expect(html).not.toContain("Refresh payment status");
+    expect(html).not.toContain("data-auto-refresh");
   });
 
   it("formats refund statuses professionally", async () => {

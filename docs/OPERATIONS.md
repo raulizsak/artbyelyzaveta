@@ -1,5 +1,7 @@
 # Operations
 
+> Current payment status and owner authorization are recorded in [Payment verification — 30 August 2026](PAYMENT_VERIFICATION_2026-08-30.md). The demo-phase payment statements below are historical and are superseded by that report.
+
 ## Environments and cost boundary
 
 - Supabase project: `art-by-elyzaveta` (`fhxgcvdwvagqnxgydyca`), Sydney `ap-southeast-2`, Free.

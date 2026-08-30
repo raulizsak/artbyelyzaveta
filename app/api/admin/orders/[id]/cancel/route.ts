@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAccountIdentity } from "@/lib/auth/authorization";
 import { triggerEmailOutbox } from "@/lib/email/outbox";
-import { getStripe } from "@/lib/stripe/server";
+import {
+  expireUnpaidOrderSession,
+  getOrderStripe,
+} from "@/lib/stripe/order-payments";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,7 +38,7 @@ export async function POST(
   const { data: order } = await admin
     .from("orders")
     .select(
-      "id, customer_email, payment_status, fulfillment_status, total_cents, amount_refunded_cents, stripe_payment_intent_id, is_demo, order_items(painting_id)",
+      "id, customer_email, payment_status, fulfillment_status, total_cents, amount_refunded_cents, stripe_payment_intent_id, stripe_checkout_session_id, stripe_mode, is_demo, order_items(painting_id)",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -49,6 +52,19 @@ export async function POST(
 
   const paid = ["paid", "partially_refunded"].includes(order.payment_status);
   if (!paid) {
+    if (!order.is_demo) {
+      try {
+        await expireUnpaidOrderSession(order);
+      } catch {
+        return NextResponse.json(
+          {
+            error:
+              "The Stripe payment could not be safely closed. Refresh the order and check payment status before cancelling.",
+          },
+          { status: 409 },
+        );
+      }
+    }
     const { error } = await (
       await createClient()
     ).rpc("admin_update_order", {
@@ -113,7 +129,7 @@ export async function POST(
     );
 
   try {
-    const refund = await getStripe().refunds.create(
+    const refund = await getOrderStripe(order).refunds.create(
       {
         payment_intent: order.stripe_payment_intent_id,
         amount: remaining,

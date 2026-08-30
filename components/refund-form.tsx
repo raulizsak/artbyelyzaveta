@@ -9,11 +9,13 @@ export function RefundForm({
   total,
   amountRefunded,
   isDemo,
+  stripeMode,
 }: {
   orderId: string;
   total: number;
   amountRefunded: number;
   isDemo: boolean;
+  stripeMode: string | null;
 }) {
   const router = useRouter();
   const remaining = total - amountRefunded;
@@ -83,7 +85,9 @@ export function RefundForm({
           ? "Submitting…"
           : isDemo
             ? "Record demo refund"
-            : "Refund in TEST MODE"}
+            : stripeMode === "test"
+              ? "Refund in Test Mode"
+              : "Refund payment"}
       </button>
       {state === "sent" ? (
         <p className="form-success-inline">

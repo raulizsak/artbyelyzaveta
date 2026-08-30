@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, Clock3, Mail, Sparkles } from "lucide-react";
 import { ClearPurchasedCart } from "@/components/clear-purchased-cart";
+import { PaymentStatusRefresh } from "@/components/payment-status-refresh";
 import { formatMoney } from "@/lib/catalog";
 import { formatDisplayValue } from "@/lib/presentation";
 import {
@@ -77,8 +78,11 @@ export default async function ConfirmationPage({
                   ? "This checkout was cancelled, expired or unsuccessful. No completed payment is recorded for this order. You can return to your bag to start a new checkout."
                   : refunded
                     ? "A refund has been recorded for this order. Please check your order details or contact us if you need help."
-                    : "We haven't received a confirmed payment for this order yet. If you have just paid, wait a moment and refresh the status. Please do not submit another payment while the result is unclear."}
+                    : "We're waiting for Stripe's secure payment confirmation. This usually takes a few moments. Please do not submit another payment while the result is unclear."}
           </p>
+          {!confirmed && !stopped && !refunded && query.session_id ? (
+            <PaymentStatusRefresh key={query.session_id} />
+          ) : null}
           <p className="order-reference">
             Order <strong>{order.reference}</strong> ·{" "}
             {formatMoney(order.totalCents, order.currency)}

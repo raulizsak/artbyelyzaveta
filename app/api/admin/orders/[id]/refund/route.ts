@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAccountIdentity } from "@/lib/auth/authorization";
 import { triggerEmailOutbox } from "@/lib/email/outbox";
-import { getStripe } from "@/lib/stripe/server";
+import { getOrderStripe } from "@/lib/stripe/order-payments";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const schema = z.object({
@@ -29,7 +29,7 @@ export async function POST(
   const { data: order } = await admin
     .from("orders")
     .select(
-      "id, customer_email, stripe_payment_intent_id, total_cents, amount_refunded_cents, payment_status, is_demo",
+      "id, customer_email, stripe_payment_intent_id, stripe_mode, total_cents, amount_refunded_cents, payment_status, is_demo",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -69,7 +69,7 @@ export async function POST(
       { status: 409 },
     );
   try {
-    const refund = await getStripe().refunds.create(
+    const refund = await getOrderStripe(order).refunds.create(
       {
         payment_intent: order.stripe_payment_intent_id,
         amount: parsed.data.amountCents,

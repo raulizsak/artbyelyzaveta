@@ -279,6 +279,7 @@ export default async function Page({
               orderId={order.id}
               total={order.total_cents}
               isDemo={order.is_demo}
+              stripeMode={order.stripe_mode}
             />
           ) : (
             <p>Refund actions become available after a confirmed payment.</p>

@@ -1,6 +1,6 @@
 # Production go-live checklist
 
-Live Stripe payments remain out of scope until this checklist is reviewed and separately approved.
+Live checkout is owner-authorized after verification. See [Payment verification — 30 August 2026](PAYMENT_VERIFICATION_2026-08-30.md) for current status; the demo-phase entries below are historical, not evidence of current verification.
 
 ## Hosting and domain
 
