@@ -10,6 +10,7 @@ import { LockKeyhole, Paintbrush, Palette, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { formatMoney } from "@/lib/catalog";
+import { paymentDiagnostic } from "@/lib/stripe/payment-diagnostic";
 
 export type CheckoutRequest = {
   paintingIds: string[];
@@ -47,6 +48,7 @@ function PaymentForm({
   const [slow, setSlow] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [diagnostic, setDiagnostic] = useState("");
   const confirming = useRef(false);
   const checkout = result.type === "success" ? result.checkout : null;
   const confirmationPath = `/order-confirmation?session_id=${encodeURIComponent(sessionId)}`;
@@ -61,6 +63,7 @@ function PaymentForm({
     confirming.current = true;
     setBusy(true);
     setError("");
+    setDiagnostic("");
     setSlow(false);
     setUncertain(false);
     const slowTimer = window.setTimeout(() => setSlow(true), 15000);
@@ -81,8 +84,11 @@ function PaymentForm({
       succeeded = true;
       setConfirmed(true);
       router.push(confirmationPath);
-    } catch {
+    } catch (cause) {
       // An SDK/network exception doesn't prove that payment failed.
+      const safeDiagnostic = paymentDiagnostic(cause);
+      console.error("stripe-checkout-confirmation-error", safeDiagnostic);
+      if (mode === "test") setDiagnostic(safeDiagnostic);
       setUncertain(true);
       setError(
         "We couldn't confirm the payment result. Please check your order status before trying again.",
@@ -148,6 +154,11 @@ function PaymentForm({
       {error ? (
         <p className="form-error" role="alert">
           {error}
+        </p>
+      ) : null}
+      {mode === "test" && diagnostic ? (
+        <p className="form-error" role="alert">
+          Test diagnostic: {diagnostic}
         </p>
       ) : null}
       {slow || uncertain ? (
