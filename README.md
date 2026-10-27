@@ -10,6 +10,7 @@ The Supabase cutover is on `main`. The public root is a premium coming-soon/sign
 - Supabase PostgreSQL with RLS, Auth with mandatory admin TOTP/AAL2, and Storage
 - No-charge demo checkout with transactional order creation, demo refund/reset, and retained Stripe architecture for later approval
 - SMTP2GO SMTP delivery from the Render server with a durable Supabase email outbox
+- Australia Post tracking through 17TRACK v2.4: server-side registration on dispatch and signed Supabase Edge Function webhooks
 - Pre-generated WebP artwork variants; no paid runtime image transformations
 - Vitest, Playwright, and pgTAP security/commerce suites
 
@@ -37,7 +38,7 @@ Local Supabase uses ports `55430`–`55439` to avoid Windows-reserved `5432x` ra
 `.env.example` is authoritative. Important boundaries:
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are browser-safe.
-- `SUPABASE_SECRET_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SMTP2GO_SMTP_USER`, `SMTP2GO_SMTP_PASSWORD`, and `RATE_LIMIT_SECRET` are server-only.
+- `SUPABASE_SECRET_KEY`, Stripe secret/webhook keys, `TRACK17_API_KEY`, `SMTP2GO_SMTP_USER`, `SMTP2GO_SMTP_PASSWORD`, and `RATE_LIMIT_SECRET` are server-only.
 - `PAYMENT_MODE=demo` selects the current no-card, no-Stripe demo checkout.
 - `ENABLE_TEST_CHECKOUT` is retained for a future separately approved Stripe test activation.
 - `ENABLE_LIVE_CHECKOUT` must remain `false` until separate go-live approval.

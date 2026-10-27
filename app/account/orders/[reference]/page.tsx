@@ -8,7 +8,7 @@ import { requireAccount } from "@/lib/auth/authorization";
 import { formatMelbourneDate, formatMelbourneDateTime } from "@/lib/date-time";
 import { createClient } from "@/lib/supabase/server";
 import { publicArtworkUrl } from "@/lib/media-url";
-import { formatDisplayValue } from "@/lib/presentation";
+import { formatDisplayValue, formatTrackingStatus } from "@/lib/presentation";
 
 export default async function Page({
   params,
@@ -21,7 +21,7 @@ export default async function Page({
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, order_reference, created_at, delivered_at, cancelled_at, total_cents, currency, payment_status, fulfillment_status, order_status, shipping_address, delivery_method, tracking_carrier, tracking_number, tracking_url, commission_eta, commission_stage, expected_dispatch, customer_status_message, order_items(title, image_path, dimensions, medium), order_events(event_type, customer_safe_description, created_at), invoices(id, invoice_reference)",
+      "id, order_reference, created_at, delivered_at, cancelled_at, total_cents, currency, payment_status, fulfillment_status, order_status, shipping_address, delivery_method, tracking_carrier, tracking_number, tracking_url, tracking_status, latest_tracking_event, last_tracking_check_at, commission_eta, commission_stage, expected_dispatch, customer_status_message, order_items(title, image_path, dimensions, medium), order_events(event_type, customer_safe_description, created_at), invoices(id, invoice_reference)",
     )
     .eq("order_reference", reference)
     .maybeSingle();
@@ -45,6 +45,14 @@ export default async function Page({
     invoice_reference: string;
   }[];
   const artworkImage = publicArtworkUrl(items[0]?.image_path);
+  const latestTrackingEvent = order.latest_tracking_event as {
+    description?: string;
+    location?: string | null;
+    date?: string | null;
+    time?: string | null;
+  } | null;
+  const latestTrackingEventTime =
+    latestTrackingEvent?.time ?? latestTrackingEvent?.date;
   return (
     <section className="account-panel">
       <Link className="text-button" href="/account/orders">
@@ -109,18 +117,37 @@ export default async function Page({
               {address.country}
             </address>
           )}
-          {order.tracking_url ? (
-            <a
-              className="cta-link"
-              href={order.tracking_url}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Track with {order.tracking_carrier || "carrier"}
-            </a>
-          ) : (
-            <p>Tracking will appear here after dispatch.</p>
-          )}
+          {order.delivery_method === "shipping" ? (
+            order.tracking_url ? (
+              <>
+                <a
+                  className="cta-link"
+                  href={order.tracking_url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Track with {order.tracking_carrier || "carrier"}
+                </a>
+                <p>
+                  <strong>Tracking status:</strong>{" "}
+                  {formatTrackingStatus(order.tracking_status)}
+                </p>
+                {latestTrackingEvent?.description ? (
+                  <p>
+                    {latestTrackingEvent.description}
+                    {latestTrackingEvent.location
+                      ? ` · ${latestTrackingEvent.location}`
+                      : ""}
+                    {latestTrackingEventTime
+                      ? ` · ${formatMelbourneDateTime(latestTrackingEventTime)}`
+                      : ""}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p>Tracking will appear here after dispatch.</p>
+            )
+          ) : null}
         </article>
       </div>
       {order.customer_status_message && order.order_status !== "delayed" ? (

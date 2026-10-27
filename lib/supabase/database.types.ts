@@ -745,6 +745,7 @@ export type Database = {
           internal_admin_notes: string | null;
           is_demo: boolean;
           last_tracking_check_at: string | null;
+          last_tracking_webhook_at: string | null;
           latest_tracking_event: Json | null;
           next_tracking_check_at: string | null;
           normalized_email: string | null;
@@ -768,8 +769,16 @@ export type Database = {
           tax_cents: number;
           total_cents: number;
           tracking_carrier: string | null;
+          tracking_carrier_code: number | null;
           tracking_error: string | null;
           tracking_number: string | null;
+          tracking_provider: string | null;
+          tracking_registered_at: string | null;
+          tracking_registered_carrier_code: number | null;
+          tracking_registered_number: string | null;
+          tracking_registration_attempted_at: string | null;
+          tracking_registration_error: string | null;
+          tracking_registration_status: string;
           tracking_retry_count: number;
           tracking_status: string | null;
           tracking_url: string | null;
@@ -804,6 +813,7 @@ export type Database = {
           internal_admin_notes?: string | null;
           is_demo?: boolean;
           last_tracking_check_at?: string | null;
+          last_tracking_webhook_at?: string | null;
           latest_tracking_event?: Json | null;
           next_tracking_check_at?: string | null;
           normalized_email?: string | null;
@@ -827,8 +837,16 @@ export type Database = {
           tax_cents?: number;
           total_cents: number;
           tracking_carrier?: string | null;
+          tracking_carrier_code?: number | null;
           tracking_error?: string | null;
           tracking_number?: string | null;
+          tracking_provider?: string | null;
+          tracking_registered_at?: string | null;
+          tracking_registered_carrier_code?: number | null;
+          tracking_registered_number?: string | null;
+          tracking_registration_attempted_at?: string | null;
+          tracking_registration_error?: string | null;
+          tracking_registration_status?: string;
           tracking_retry_count?: number;
           tracking_status?: string | null;
           tracking_url?: string | null;
@@ -863,6 +881,7 @@ export type Database = {
           internal_admin_notes?: string | null;
           is_demo?: boolean;
           last_tracking_check_at?: string | null;
+          last_tracking_webhook_at?: string | null;
           latest_tracking_event?: Json | null;
           next_tracking_check_at?: string | null;
           normalized_email?: string | null;
@@ -886,8 +905,16 @@ export type Database = {
           tax_cents?: number;
           total_cents?: number;
           tracking_carrier?: string | null;
+          tracking_carrier_code?: number | null;
           tracking_error?: string | null;
           tracking_number?: string | null;
+          tracking_provider?: string | null;
+          tracking_registered_at?: string | null;
+          tracking_registered_carrier_code?: number | null;
+          tracking_registered_number?: string | null;
+          tracking_registration_attempted_at?: string | null;
+          tracking_registration_error?: string | null;
+          tracking_registration_status?: string;
           tracking_retry_count?: number;
           tracking_status?: string | null;
           tracking_url?: string | null;
@@ -1422,6 +1449,19 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_claim_tracking_registration: {
+        Args: { p_order_id: string };
+        Returns: Json;
+      };
+      admin_complete_tracking_registration: {
+        Args: {
+          p_error?: string | null;
+          p_order_id: string;
+          p_success: boolean;
+          p_tracking_number: string;
+        };
+        Returns: Json;
+      };
       admin_archive_discount: {
         Args: { p_discount_id: string };
         Returns: undefined;
@@ -1834,6 +1874,18 @@ export type Database = {
           p_next_check_at: string;
           p_order_id: string;
           p_tracking_status: string;
+        };
+        Returns: Json;
+      };
+      record_17track_webhook: {
+        Args: {
+          p_carrier_code: number;
+          p_delivered: boolean;
+          p_delivered_at: string | null;
+          p_error: string | null;
+          p_latest_event: Json | null;
+          p_tracking_number: string;
+          p_tracking_status: string | null;
         };
         Returns: Json;
       };

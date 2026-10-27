@@ -7,7 +7,7 @@ import { ResendOrderEmailButton } from "@/components/resend-order-email-button";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
 import { formatMoney } from "@/lib/catalog";
 import { formatMelbourneDateTime } from "@/lib/date-time";
-import { formatDisplayValue } from "@/lib/presentation";
+import { formatDisplayValue, formatTrackingStatus } from "@/lib/presentation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function Page({
@@ -45,6 +45,16 @@ export default async function Page({
     applied_cents: number;
   }[];
   const address = order.shipping_address as Record<string, string>;
+  const latestTrackingEvent = order.latest_tracking_event as {
+    description?: string;
+    location?: string | null;
+    stage?: string | null;
+    subStatus?: string | null;
+    date?: string | null;
+    time?: string | null;
+  } | null;
+  const latestTrackingEventTime =
+    latestTrackingEvent?.time ?? latestTrackingEvent?.date;
   return (
     <section className="account-panel">
       <Link className="text-button" href="/admin/orders">
@@ -170,7 +180,7 @@ export default async function Page({
           </div>
           {order.tracking_status ? (
             <span className="status-pill">
-              {formatDisplayValue(order.tracking_status)}
+              {formatTrackingStatus(order.tracking_status)}
             </span>
           ) : null}
         </div>
@@ -197,10 +207,40 @@ export default async function Page({
           </div>
           <div>
             <dt>Status</dt>
-            <dd>{formatDisplayValue(order.tracking_status, "Not checked")}</dd>
+            <dd>{formatTrackingStatus(order.tracking_status)}</dd>
           </div>
           <div>
-            <dt>Last checked</dt>
+            <dt>Automation</dt>
+            <dd>
+              {order.tracking_provider === "17track"
+                ? `17TRACK · ${formatDisplayValue(order.tracking_registration_status)}`
+                : "Not registered"}
+            </dd>
+          </div>
+          <div>
+            <dt>Carrier code</dt>
+            <dd>{order.tracking_carrier_code ?? "Not set"}</dd>
+          </div>
+          <div>
+            <dt>Latest event</dt>
+            <dd>
+              {latestTrackingEvent?.description ? (
+                <>
+                  {latestTrackingEvent.description}
+                  {latestTrackingEvent.location
+                    ? ` · ${latestTrackingEvent.location}`
+                    : ""}
+                  {latestTrackingEventTime
+                    ? ` · ${formatMelbourneDateTime(latestTrackingEventTime)}`
+                    : ""}
+                </>
+              ) : (
+                "No carrier event yet"
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>Last tracking update</dt>
             <dd>
               {order.last_tracking_check_at
                 ? formatMelbourneDateTime(order.last_tracking_check_at)
@@ -215,6 +255,28 @@ export default async function Page({
                 : "Not delivered"}
             </dd>
           </div>
+          <div>
+            <dt>17TRACK registered</dt>
+            <dd>
+              {order.tracking_registered_at
+                ? formatMelbourneDateTime(order.tracking_registered_at)
+                : "Not registered yet"}
+            </dd>
+          </div>
+          <div>
+            <dt>Last webhook</dt>
+            <dd>
+              {order.last_tracking_webhook_at
+                ? formatMelbourneDateTime(order.last_tracking_webhook_at)
+                : "No webhook received"}
+            </dd>
+          </div>
+          {order.tracking_registration_error ? (
+            <div>
+              <dt>Registration error</dt>
+              <dd>{order.tracking_registration_error}</dd>
+            </div>
+          ) : null}
           {order.tracking_error ? (
             <div>
               <dt>Latest error</dt>

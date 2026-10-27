@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getAccountIdentity } from "@/lib/auth/authorization";
 import { triggerEmailOutbox } from "@/lib/email/outbox";
 import { createClient } from "@/lib/supabase/server";
+import { registerOrderTracking } from "@/lib/tracking/registration";
+import { australiaPostTrackingUrl } from "@/supabase/functions/tracking-webhook/seventeen-track";
 
 const schema = z.object({
   action: z.enum(["fulfill", "update", "delay", "cancel", "commission_update"]),
@@ -56,12 +58,43 @@ export async function PATCH(
     return NextResponse.json({ error: "Review the update" }, { status: 400 });
   const value = parsed.data;
   const supabase = await createClient();
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("delivery_method, is_demo, tracking_number, tracking_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (!existingOrder)
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  const defaultsToAustraliaPost =
+    existingOrder.delivery_method === "shipping" &&
+    value.fulfillmentStatus === "shipped" &&
+    Boolean(value.trackingNumber);
   const detectedCarrier =
     value.trackingCarrier ||
-    (/auspost\.com\.au/i.test(value.trackingUrl) || /AU$/i.test(value.trackingNumber)
+    (/auspost\.com\.au/i.test(value.trackingUrl) ||
+    /AU$/i.test(value.trackingNumber) ||
+    defaultsToAustraliaPost
       ? "Australia Post"
       : "");
-  if (value.fulfillmentStatus === "delivered" && value.action !== "commission_update") {
+  const numberChanged =
+    value.trackingNumber.trim().toUpperCase() !==
+    (existingOrder.tracking_number ?? "").trim().toUpperCase();
+  const priorGeneratedUrl = existingOrder.tracking_number
+    ? australiaPostTrackingUrl(existingOrder.tracking_number)
+    : "";
+  const shouldRefreshGeneratedUrl =
+    detectedCarrier === "Australia Post" &&
+    numberChanged &&
+    value.trackingUrl === priorGeneratedUrl;
+  const trackingUrl =
+    (shouldRefreshGeneratedUrl ? "" : value.trackingUrl) ||
+    (detectedCarrier === "Australia Post"
+      ? australiaPostTrackingUrl(value.trackingNumber)
+      : "");
+  if (
+    value.fulfillmentStatus === "delivered" &&
+    value.action !== "commission_update"
+  ) {
     const { error: detailError } = await supabase.rpc("admin_update_order", {
       p_order_id: id,
       p_action: "update",
@@ -70,7 +103,7 @@ export async function PATCH(
         order_status: value.orderStatus,
         tracking_carrier: detectedCarrier,
         tracking_number: value.trackingNumber,
-        tracking_url: value.trackingUrl,
+        tracking_url: trackingUrl,
         customer_status_message: value.customerMessage,
         internal_admin_notes: value.internalNotes,
       },
@@ -113,7 +146,7 @@ export async function PATCH(
             order_status: value.orderStatus,
             tracking_carrier: detectedCarrier,
             tracking_number: value.trackingNumber,
-            tracking_url: value.trackingUrl,
+            tracking_url: trackingUrl,
             commission_eta: value.commissionEta,
             customer_status_message: value.customerMessage,
             internal_admin_notes: value.internalNotes,
@@ -122,5 +155,14 @@ export async function PATCH(
   if (error)
     return NextResponse.json({ error: "Order not updated" }, { status: 503 });
   if (value.notify) await triggerEmailOutbox(id);
-  return NextResponse.json({ ok: true });
+  const trackingRegistration =
+    value.fulfillmentStatus === "shipped" && value.trackingNumber
+      ? await registerOrderTracking({ orderId: id, supabase }).catch(() => ({
+          attempted: false,
+          registered: false,
+          message:
+            "The order was saved, but automatic tracking could not start.",
+        }))
+      : null;
+  return NextResponse.json({ ok: true, trackingRegistration });
 }

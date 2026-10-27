@@ -5,11 +5,20 @@ const preservedWords = new Map([
   ["id", "ID"],
 ]);
 
+const trackingStatusLabels = new Map([
+  ["NotFound", "Not found"],
+  ["InfoReceived", "Info received"],
+  ["InTransit", "In transit"],
+  ["Expired", "Expired"],
+  ["AvailableForPickup", "Available for pickup"],
+  ["OutForDelivery", "Out for delivery"],
+  ["DeliveryFailure", "Delivery failed"],
+  ["Delivered", "Delivered"],
+  ["Exception", "Exception"],
+]);
+
 /** Formats machine-safe enum-like values for customer and admin presentation. */
-export function formatDisplayValue(
-  input: unknown,
-  fallback = "Not specified",
-) {
+export function formatDisplayValue(input: unknown, fallback = "Not specified") {
   if (typeof input !== "string" || !input.trim()) return fallback;
   return input
     .trim()
@@ -24,4 +33,10 @@ export function formatDisplayValue(
       return lower.charAt(0).toLocaleUpperCase("en-AU") + lower.slice(1);
     })
     .join(" ");
+}
+
+/** Formats a provider-native 17TRACK main status for people. */
+export function formatTrackingStatus(input: unknown, fallback = "Not checked") {
+  if (typeof input !== "string" || !input.trim()) return fallback;
+  return trackingStatusLabels.get(input.trim()) ?? formatDisplayValue(input);
 }

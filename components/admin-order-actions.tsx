@@ -40,14 +40,25 @@ export function AdminOrderActions({
   const [state, setState] = useState<"idle" | "busy" | "saved" | "error">(
     "idle",
   );
+  const [saveMessage, setSaveMessage] = useState("");
   async function save(action: string) {
     setState("busy");
+    setSaveMessage("");
     const response = await fetch(`/api/admin/orders/${orderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, notify, ...form }),
     });
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+      trackingRegistration?: { message?: string | null } | null;
+    } | null;
     setState(response.ok ? "saved" : "error");
+    setSaveMessage(
+      response.ok
+        ? (body?.trackingRegistration?.message ?? "Order updated.")
+        : (body?.error ?? "The order could not be updated."),
+    );
     if (response.ok) router.refresh();
   }
   async function cancelOrder(event: React.FormEvent) {
@@ -224,6 +235,11 @@ export function AdminOrderActions({
           </button>
         ) : null}
       </div>
+      {saveMessage ? (
+        <p className={state === "error" ? "form-error" : "form-success"}>
+          {saveMessage}
+        </p>
+      ) : null}
       {shipped ? (
         <p className="form-help">
           This artwork has shipped. Use the return workflow instead of a normal

@@ -63,6 +63,27 @@ Configure `SMTP2GO_SMTP_HOST`, `SMTP2GO_SMTP_PORT`, `SMTP2GO_SMTP_USER`, `SMTP2G
 
 An `email-outbox` Edge Function is deployed as a dormant, custom-authenticated fallback. It is not used by the current Render SMTP path and has no SMTP2GO API key configured.
 
+## Australia Post tracking through 17TRACK
+
+Australia Post shipments use 17TRACK API v2.4 with explicit carrier code `1151`; the website does not require an Australia Post Shipping & Tracking API contract. When an AAL2 administrator enters a tracking number and marks a non-demo Shipping order as Shipped, the Render server registers only that tracking number and carrier with 17TRACK. Collection and demo orders are rejected before any provider call. Repeated saves use a database claim and 17TRACK's already-registered response as idempotency guards.
+
+17TRACK posts complete tracking updates to:
+
+```text
+https://fhxgcvdwvagqnxgydyca.supabase.co/functions/v1/tracking-webhook
+```
+
+The public Edge Function preserves the raw body and verifies the `sign` header as the hexadecimal SHA-256 of `raw_body + "/" + TRACK17_API_KEY`. It accepts only current Australia Post tracking numbers already associated with eligible Shipping orders. Structured `latest_status.status = "Delivered"` enters the existing atomic Delivered transition; the existing `email_outbox` dedupe key remains the final exactly-once mail guard. A successful transition calls the protected Render email-outbox endpoint so SMTP2GO delivery is not left queued.
+
+Required secret placement:
+
+- Render: `TRACK17_API_KEY`, plus the existing `EMAIL_OUTBOX_TRIGGER_SECRET`.
+- Supabase Edge Functions: `TRACK17_API_KEY`, `RENDER_EMAIL_OUTBOX_URL`, and `RENDER_EMAIL_OUTBOX_SECRET`.
+
+The two outbox secret variables above contain the same secret under environment-specific names. Never use a `NEXT_PUBLIC_` prefix. The retired `AUSTRALIA_POST_API_KEY`, `AUSTRALIA_POST_API_PASSWORD`, `AUSTRALIA_POST_ACCOUNT_NUMBER`, and `TRACKING_CRON_SECRET` variables are not used. The former hourly `art-by-elyzaveta-tracking-hourly` pg_cron job and `tracking-check` function are retired after the signed webhook endpoint is verified.
+
+If 17TRACK is unavailable, save the order as Shipped and retry the same update later. The admin page shows a safe registration error. The existing **Mark delivered** control remains the manual fallback and uses the same atomic timeline/outbox path.
+
 ## Auth URLs
 
 Allowed site/redirect URLs must include the exact HTTPS production domain and local development callback:

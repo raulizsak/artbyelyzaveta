@@ -1,5 +1,9 @@
 # Rollback
 
+## 17TRACK tracking automation
+
+If signed webhook processing is uncertain, first clear the webhook URL in the 17TRACK dashboard or temporarily remove `TRACK17_API_KEY` from the Supabase Edge Function secrets. This makes the endpoint fail closed without changing order state. Leave the additive tracking columns and order history in place. Restore the prior application commit only after stopping new automatic registrations; Lisa can continue using the existing manual Delivered action. Recover with a forward migration and redeploy the webhook before restoring its dashboard URL. Do not re-enable the obsolete direct Australia Post poller because this store is not eligible for that API.
+
 ## Live checkout — 30 August 2026
 
 Current payment release: `ab4b2bf`. If payment correctness is uncertain, keep `PAYMENT_MODE=live` and set `ENABLE_LIVE_CHECKOUT=false` and `ENABLE_TEST_CHECKOUT=false`, then redeploy. Do not switch to demo: that would enable non-payment orders. Preserve both webhook signing secrets and both Stripe keys so existing transactions/refunds can still reconcile. Never erase orders, refund records, or audit history. Investigate and apply a forward fix before re-enabling checkout.
