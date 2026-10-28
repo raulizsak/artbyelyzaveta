@@ -4,6 +4,7 @@ import { CommissionForm } from "@/components/commission-form";
 
 export const metadata: Metadata = {
   title: "Commission a Painting",
+  alternates: { canonical: "/commissions" },
   description:
     "Enquire about commissioning a one-of-one original painting by Elyzaveta Izsak.",
 };

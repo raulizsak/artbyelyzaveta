@@ -117,13 +117,13 @@ select is(
 );
 select is(
   (select payment_status from public.orders where id = (select order_id from test_failed_reservation)),
-  'failed',
-  'A failed payment updates the order safely'
+  'pending',
+  'A retryable card decline keeps the order pending'
 );
 select is(
   (select status from public.paintings where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4'),
-  'available',
-  'A failed payment releases the one-of-one reservation'
+  'reserved',
+  'A retryable card decline preserves the one-of-one reservation'
 );
 
 insert into public.paintings (

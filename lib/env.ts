@@ -24,15 +24,23 @@ export const getSupabaseSecretKey = () =>
 
 export type StripeMode = "test" | "live";
 
-export const getPaymentMode = (): "demo" | StripeMode => {
+export const getPaymentMode = (): "disabled" | "demo" | StripeMode => {
   const value = process.env.PAYMENT_MODE?.trim().toLowerCase();
-  return value === "live" || value === "test" ? value : "demo";
+  if (value === "live" || value === "test") return value;
+  if (
+    value === "demo" &&
+    process.env.NODE_ENV !== "production" &&
+    process.env.ENABLE_DEMO_CHECKOUT === "true"
+  )
+    return "demo";
+  return "disabled";
 };
 
 export const getStripeSecretKey = (mode: StripeMode) => {
-  const named = process.env[
-    mode === "live" ? "STRIPE_LIVE_SECRET_KEY" : "STRIPE_TEST_SECRET_KEY"
-  ]?.trim();
+  const named =
+    process.env[
+      mode === "live" ? "STRIPE_LIVE_SECRET_KEY" : "STRIPE_TEST_SECRET_KEY"
+    ]?.trim();
   const legacy =
     mode === "test" && process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
       ? process.env.STRIPE_SECRET_KEY.trim()
@@ -41,11 +49,12 @@ export const getStripeSecretKey = (mode: StripeMode) => {
 };
 
 export const getStripePublishableKey = (mode: StripeMode) => {
-  const named = process.env[
-    mode === "live"
-      ? "NEXT_PUBLIC_STRIPE_LIVE_PUBLISHABLE_KEY"
-      : "NEXT_PUBLIC_STRIPE_TEST_PUBLISHABLE_KEY"
-  ]?.trim();
+  const named =
+    process.env[
+      mode === "live"
+        ? "NEXT_PUBLIC_STRIPE_LIVE_PUBLISHABLE_KEY"
+        : "NEXT_PUBLIC_STRIPE_TEST_PUBLISHABLE_KEY"
+    ]?.trim();
   const legacy =
     mode === "test" &&
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_")

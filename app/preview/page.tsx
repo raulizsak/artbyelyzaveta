@@ -3,7 +3,10 @@ import { BrandLogo } from "@/components/brand-logo";
 import { PreviewAccessForm } from "@/components/preview-access-form";
 import { safePreviewNext } from "@/lib/preview";
 
-export const metadata: Metadata = { title: "Private preview" };
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "Private preview",
+};
 
 export default async function PreviewPage({
   searchParams,

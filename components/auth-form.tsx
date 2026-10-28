@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { PasswordField } from "@/components/password-field";
 import { createClient } from "@/lib/supabase/client";
+import { safePreviewNext } from "@/lib/preview";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 
@@ -29,8 +30,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [lastName, setLastName] = useState("");
   const [status, setStatus] = useState<"idle" | "busy" | "success">("idle");
   const [error, setError] = useState("");
-  const next = params.get("next")?.startsWith("/")
-    ? params.get("next")!
+  const next = params.get("next")
+    ? safePreviewNext(params.get("next"))
     : "/account";
 
   async function submit(event: React.FormEvent) {
@@ -55,55 +56,62 @@ export function AuthForm({ mode }: { mode: Mode }) {
     }
     setStatus("busy");
     setError("");
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    if (mode === "login") {
-      const result = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (result.error)
-        setError("We couldn't sign you in. Check your details and try again.");
-      else {
-        router.replace(next);
-        router.refresh();
-        return;
+      if (mode === "login") {
+        const result = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (result.error)
+          setError(
+            "We couldn't sign you in. Check your details and try again.",
+          );
+        else {
+          router.replace(next);
+          router.refresh();
+          return;
+        }
+      } else if (mode === "signup") {
+        const result = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { first_name: firstName.trim(), last_name: lastName.trim() },
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          },
+        });
+        if (result.error)
+          setError(
+            "We couldn't create the account. Please review your details and try again.",
+          );
+        else setStatus("success");
+      } else if (mode === "forgot") {
+        const result = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        });
+        if (result.error)
+          setError(
+            "We couldn't send a reset link right now. Please try again shortly.",
+          );
+        else setStatus("success");
+      } else {
+        const result = await supabase.auth.updateUser({ password });
+        if (result.error)
+          setError(
+            "We couldn't update the password. Request a fresh reset link and try again.",
+          );
+        else {
+          setStatus("success");
+          window.setTimeout(() => router.replace("/account/security"), 800);
+        }
       }
-    } else if (mode === "signup") {
-      const result = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { first_name: firstName.trim(), last_name: lastName.trim() },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        },
-      });
-      if (result.error)
-        setError(
-          "We couldn't create the account. Please review your details and try again.",
-        );
-      else setStatus("success");
-    } else if (mode === "forgot") {
-      const result = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-      });
-      if (result.error)
-        setError(
-          "We couldn't send a reset link right now. Please try again shortly.",
-        );
-      else setStatus("success");
-    } else {
-      const result = await supabase.auth.updateUser({ password });
-      if (result.error)
-        setError(
-          "We couldn't update the password. Request a fresh reset link and try again.",
-        );
-      else {
-        setStatus("success");
-        window.setTimeout(() => router.replace("/account/security"), 800);
-      }
+      setStatus((current) => (current === "success" ? "success" : "idle"));
+    } catch {
+      setError("We couldn't connect securely. Please try again shortly.");
+      setStatus("idle");
     }
-    setStatus((current) => (current === "success" ? "success" : "idle"));
   }
 
   if (status === "success") {

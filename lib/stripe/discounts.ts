@@ -54,8 +54,7 @@ export async function syncDiscountCatalog(
             mode,
             version: discount.version,
             stripe_coupon_id: current?.stripe_coupon_id ?? null,
-            stripe_promotion_code_id:
-              current?.stripe_promotion_code_id ?? null,
+            stripe_promotion_code_id: current?.stripe_promotion_code_id ?? null,
             sync_status: "error",
             sync_error: message,
             updated_at: new Date().toISOString(),
@@ -77,7 +76,10 @@ export async function syncDiscountCatalog(
           if (old.sync_status !== "inactive")
             await admin
               .from("discount_stripe_catalog")
-              .update({ sync_status: "inactive", updated_at: new Date().toISOString() })
+              .update({
+                sync_status: "inactive",
+                updated_at: new Date().toISOString(),
+              })
               .eq("id", old.id);
         }
 
@@ -93,7 +95,9 @@ export async function syncDiscountCatalog(
             .map((item) => item.stripe_product_id)
             .filter((value): value is string => Boolean(value));
           if (eligibleProductIds.length !== paintingIds.length)
-            throw new Error("Eligible paintings are not fully synced to Stripe.");
+            throw new Error(
+              "Eligible paintings are not fully synced to Stripe.",
+            );
         }
 
         let coupon: Stripe.Coupon | null = null;
@@ -159,7 +163,9 @@ export async function syncDiscountCatalog(
             },
           );
         } else if (promotion.active !== active) {
-          promotion = await stripe.promotionCodes.update(promotion.id, { active });
+          promotion = await stripe.promotionCodes.update(promotion.id, {
+            active,
+          });
         }
 
         const status = active ? "synced" : "inactive";
@@ -189,8 +195,7 @@ export async function syncDiscountCatalog(
             mode,
             version: discount.version,
             stripe_coupon_id: current?.stripe_coupon_id ?? null,
-            stripe_promotion_code_id:
-              current?.stripe_promotion_code_id ?? null,
+            stripe_promotion_code_id: current?.stripe_promotion_code_id ?? null,
             sync_status: "error",
             sync_error: message.slice(0, 500),
             updated_at: new Date().toISOString(),

@@ -5,10 +5,11 @@ import {
   PaymentElement,
   useCheckoutElements,
 } from "@stripe/react-stripe-js/checkout";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js/pure";
 import { LockKeyhole, Paintbrush, Palette, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/catalog";
 import { paymentDiagnostic } from "@/lib/stripe/payment-diagnostic";
 
@@ -47,6 +48,15 @@ function PaymentForm({
   const [uncertain, setUncertain] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [diagnostic, setDiagnostic] = useState("");
+  const [initializationTimedOut, setInitializationTimedOut] = useState(false);
+  useEffect(() => {
+    if (result.type !== "loading") return;
+    const timer = window.setTimeout(
+      () => setInitializationTimedOut(true),
+      20_000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [result.type]);
   const confirming = useRef(false);
   const checkout = result.type === "success" ? result.checkout : null;
   const confirmationPath = `/order-confirmation?session_id=${encodeURIComponent(sessionId)}`;
@@ -111,10 +121,17 @@ function PaymentForm({
         <p className="form-error" role="alert">
           {result.error.message || "Secure payment could not be loaded."}
         </p>
-      ) : (
-        <p className="form-help" role="status">
-          Loading secure payment…
+      ) : initializationTimedOut ? (
+        <p className="form-error" role="alert">
+          Secure payment could not be loaded. Check your connection.{" "}
+          <a href={confirmationPath}>Check order status</a> before trying again.
         </p>
+      ) : (
+        <div className="form-help" role="status">
+          <span>Loading secure payment…</span>
+          <Skeleton className="skeleton-input" />
+          <Skeleton className="skeleton-input" />
+        </div>
       )}
       {totalMismatch || expired ? (
         <p className="form-error" role="alert">
@@ -191,21 +208,32 @@ export function StripePaymentPanel({
   const preparing = useRef(false);
   const stripe = useMemo(() => {
     const prefix = mode === "live" ? "pk_live_" : "pk_test_";
-    return publishableKey.startsWith(prefix)
+    return enabled && publishableKey.startsWith(prefix)
       ? loadStripe(publishableKey).catch(() => null)
       : null;
-  }, [mode, publishableKey]);
+  }, [enabled, mode, publishableKey]);
 
   async function prepare() {
     if (preparing.current || !stripe) return;
     preparing.current = true;
     setBusy(true);
     setError("");
+    let stripeTimer: number | undefined;
     try {
-      const stripeClient = await stripe;
+      const stripeClient = await Promise.race([
+        stripe,
+        new Promise<never>((_, reject) => {
+          stripeTimer = window.setTimeout(
+            () => reject(new Error("stripe-timeout")),
+            20_000,
+          );
+        }),
+      ]);
+      window.clearTimeout(stripeTimer);
       if (!stripeClient) throw new Error("stripe-unavailable");
       const response = await fetch("/api/checkout/session", {
         method: "POST",
+        signal: AbortSignal.timeout(25_000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
       });
@@ -225,6 +253,7 @@ export function StripePaymentPanel({
         "Secure payment could not be loaded. Please check your connection and try again. No payment has been submitted.",
       );
     } finally {
+      window.clearTimeout(stripeTimer);
       preparing.current = false;
       setBusy(false);
     }

@@ -11,7 +11,9 @@ const optionalAudAmount = z
     (value) => value === null || /^\d+(?:\.\d{1,2})?$/.test(value),
     "Enter an AUD amount with no more than two decimal places.",
   )
-  .transform((value) => (value === null ? null : Math.round(Number(value) * 100)));
+  .transform((value) =>
+    value === null ? null : Math.round(Number(value) * 100),
+  );
 
 export const discountInputSchema = z
   .object({

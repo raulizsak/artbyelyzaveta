@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/env";
 
 export type AccountProfile = {
   id: string;
@@ -27,6 +28,7 @@ function claimString(claims: Record<string, unknown>, key: string) {
 }
 
 export async function getAccountIdentity(): Promise<AccountIdentity | null> {
+  if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims) return null;
@@ -44,8 +46,7 @@ export async function getAccountIdentity(): Promise<AccountIdentity | null> {
 
   let profile = profileData as AccountProfile | null;
   const verified =
-    Boolean(claimString(claims, "email_verified")) ||
-    Boolean(claims.email_verified);
+    claims.email_verified === true || claims.email_verified === "true";
   const bootstrapEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 
   if (

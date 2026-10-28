@@ -5,6 +5,7 @@ import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Contact",
+  alternates: { canonical: "/contact" },
   description:
     "Contact Art by Elyzaveta about an original painting, delivery or a general enquiry.",
 };

@@ -50,7 +50,7 @@ describe("order email templates", () => {
     expect(message.html).toContain(
       "artwork-public/paintings/cows-at-dusk/main.webp",
     );
-    expect(message.html).toContain("brand-email-logo.svg");
+    expect(message.html).toContain("brand-stripe-logo.png");
     expect(message.html).toContain("elyzaveta-signature.png");
   });
 
@@ -143,7 +143,7 @@ describe("order email templates", () => {
     expect(message.text).toContain("/admin/orders/ABE-2026-DEMO0001");
     expect(message.html).not.toContain("<script>not markup</script>");
     expect(message.html).toContain("&lt;script&gt;not markup&lt;/script&gt;");
-    expect(message.html).toContain("brand-email-logo.svg");
+    expect(message.html).toContain("brand-stripe-logo.png");
     expect(message.html).not.toContain("❦");
     expect(message.html).not.toContain("elyzaveta-signature.png");
   });
@@ -156,7 +156,7 @@ describe("order email templates", () => {
     (name, artwork, action) => {
       const html = readFileSync(`supabase/templates/${name}.html`, "utf8");
 
-      expect(html).toContain("brand-email-logo.svg");
+      expect(html).toContain("brand-stripe-logo.png");
       expect(html).toContain(artwork);
       expect(html).toContain("elyzaveta-signature.png");
       expect(html).toContain(action);

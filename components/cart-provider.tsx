@@ -13,6 +13,7 @@ import type { CartPainting } from "@/lib/catalog";
 export type CartItem = CartPainting & { quantity: 1 };
 type RemovedItem = CartItem | null;
 type CartContextValue = {
+  hydrated: boolean;
   items: CartItem[];
   count: number;
   subtotal: number;
@@ -85,6 +86,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<CartContextValue>(
     () => ({
+      hydrated,
       items,
       count: items.length,
       subtotal: items.reduce(
@@ -102,7 +104,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       isCartOpen,
       setCartOpen,
     }),
-    [add, isCartOpen, items, remove, removedItem, undoRemove],
+    [add, hydrated, isCartOpen, items, remove, removedItem, undoRemove],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

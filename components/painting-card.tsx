@@ -1,49 +1,56 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import {
-  availabilityLabel,
-  formatMoney,
-  paintingDimensions,
-  type Painting,
-} from "@/lib/catalog";
+import { ArtworkImage } from "@/components/artwork-image";
+import { formatMoney, paintingDimensions, type Painting } from "@/lib/catalog";
 
-export function PaintingCard({ painting }: { painting: Painting }) {
+export function PaintingCard({
+  painting,
+  eager = false,
+}: {
+  painting: Painting;
+  eager?: boolean;
+}) {
+  const media = painting.media[0];
   return (
     <article className="painting-card">
       <Link
         aria-label={`View ${painting.title}`}
-        className="painting-card__image"
+        className="painting-card__link"
         href={`/shop/${painting.slug}`}
       >
-        <Image
-          alt={painting.media[0].alt}
-          height={1080}
-          sizes="(max-width: 700px) 92vw, 55vw"
-          src={painting.media[0].src}
-          width={1080}
-        />
-        <span className="status-pill">
-          {availabilityLabel(painting.status)}
-        </span>
-      </Link>
-      <div className="painting-card__content">
-        <div>
-          <p>{painting.category ?? "Original"} · Original</p>
-          <h2>
-            <Link href={`/shop/${painting.slug}`}>{painting.title}</Link>
-          </h2>
+        <div className="painting-card__image">
+          {media ? (
+            <ArtworkImage eager={eager} media={media} />
+          ) : (
+            <span className="artwork-image-error">Photograph unavailable</span>
+          )}
+          <span className="status-pill">
+            {painting.status === "reserved"
+              ? "Reserved"
+              : painting.status === "sold"
+                ? "Sold"
+                : "Available"}
+          </span>
         </div>
-        <ArrowUpRight aria-hidden="true" size={22} strokeWidth={1.4} />
-      </div>
-      <div className="painting-card__meta">
-        <span>
-          {paintingDimensions(painting)} ·{" "}
-          {painting.medium ?? "Original artwork"}
-          {painting.surface ? ` on ${painting.surface.toLowerCase()}` : ""}
-        </span>
-        <strong>{formatMoney(painting.priceCents, painting.currency)}</strong>
-      </div>
+        <div className="painting-card__content">
+          <h2>{painting.title}</h2>
+          <strong>
+            {formatMoney(painting.priceCents, painting.currency)}{" "}
+            <small>{painting.currency}</small>
+          </strong>
+        </div>
+        <div className="painting-card__meta">
+          <span>{paintingDimensions(painting)}</span>
+          {painting.medium ? (
+            <span>
+              {painting.medium}
+              {painting.surface ? ` on ${painting.surface.toLowerCase()}` : ""}
+            </span>
+          ) : null}
+          {painting.framed && painting.frameDescription ? (
+            <span>{painting.frameDescription}</span>
+          ) : null}
+        </div>
+      </Link>
     </article>
   );
 }

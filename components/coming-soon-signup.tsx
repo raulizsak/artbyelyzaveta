@@ -14,12 +14,17 @@ export function ComingSoonSignup() {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setState("busy");
-    const response = await fetch("/api/subscribers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    setState(response.ok ? "success" : "error");
+    try {
+      const response = await fetch("/api/subscribers", {
+        method: "POST",
+        signal: AbortSignal.timeout(20_000),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setState(response.ok ? "success" : "error");
+    } catch {
+      setState("error");
+    }
   }
 
   if (state === "success")

@@ -30,7 +30,7 @@ export async function sendShopNotification(input: ShopNotification) {
     process.env.SITE_URL ||
     "https://artbyelyzaveta.shop"
   ).replace(/\/$/, "");
-  const logoUrl = `${siteUrl}/brand-email-logo.svg`;
+  const logoUrl = `${siteUrl}/brand-stripe-logo.png`;
 
   const detailText = input.rows
     .filter(([, value]) => value)

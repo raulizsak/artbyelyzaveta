@@ -17,30 +17,46 @@ const messages: Record<string, string> = {
   discount_expired: "This discount code has expired.",
   discount_not_applicable: "This discount code doesn't apply to this painting.",
   discount_usage_limit: "This discount code has reached its usage limit.",
-  discount_customer_limit: "This discount code has already been used for this email address.",
-  discount_minimum_not_met: "This order doesn't meet the discount's minimum amount.",
+  discount_customer_limit:
+    "This discount code has already been used for this email address.",
+  discount_minimum_not_met:
+    "This order doesn't meet the discount's minimum amount.",
   discount_not_combinable: "These discount codes can't be combined.",
 };
 
 export async function POST(request: Request) {
-  if (
-    !(await enforceRateLimit(request, {
-      scope: "checkout-quote",
-      limit: 60,
-      windowMs: 60 * 60 * 1000,
-    }))
-  )
-    return NextResponse.json({ error: "Please wait and try again." }, { status: 429 });
-  const parsed = schema.safeParse(await request.json());
-  if (!parsed.success)
-    return NextResponse.json({ error: "Review your checkout details." }, { status: 400 });
   try {
+    if (
+      !(await enforceRateLimit(request, {
+        scope: "checkout-quote",
+        limit: 60,
+        windowMs: 60 * 60 * 1000,
+      }))
+    )
+      return NextResponse.json(
+        { error: "Please wait and try again." },
+        { status: 429 },
+      );
+    const parsed = schema.safeParse(await request.json());
+    if (!parsed.success)
+      return NextResponse.json(
+        { error: "Review your checkout details." },
+        { status: 400 },
+      );
     return NextResponse.json(await quoteCommerce(parsed.data));
   } catch (caught) {
-    const code = caught instanceof QuoteError ? caught.code : "quote_unavailable";
+    const code =
+      caught instanceof QuoteError ? caught.code : "quote_unavailable";
     return NextResponse.json(
       { error: messages[code] ?? "The order total couldn't be refreshed." },
-      { status: code === "painting_unavailable" ? 409 : 400 },
+      {
+        status:
+          code === "painting_unavailable"
+            ? 409
+            : caught instanceof QuoteError
+              ? 400
+              : 503,
+      },
     );
   }
 }

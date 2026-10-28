@@ -87,7 +87,7 @@ select is((select count(*) from public.customer_addresses), 2::bigint, 'Admin at
 select is((select count(*) from public.invoices), 2::bigint, 'Admin at AAL2 can read invoices');
 select is((select count(*) from public.return_requests), 2::bigint, 'Admin at AAL2 can read returns');
 select ok((select is_admin and is_aal2 from public.admin_access_state()), 'Admin access state accepts AAL2');
-select is((select count(*) from storage.objects where bucket_id = 'artwork-originals'), 1::bigint, 'Admin at AAL2 can read artwork masters');
+select is((select count(*) from storage.objects where bucket_id = 'artwork-originals' and name = 'fixtures/master.webp'), 1::bigint, 'Admin at AAL2 can read the fixture artwork master');
 select is((select count(*) from storage.objects where bucket_id = 'return-evidence'), 3::bigint, 'Admin at AAL2 can read all return evidence');
 select is((select count(*) from storage.objects where bucket_id = 'invoices'), 2::bigint, 'Admin at AAL2 can read private invoice objects');
 select lives_ok(

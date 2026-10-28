@@ -8,11 +8,27 @@ import {
 } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Checkout" };
+export const metadata: Metadata = {
+  title: "Checkout",
+  robots: { index: false, follow: false },
+};
 export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage() {
   const paymentMode = getPaymentMode();
+  if (paymentMode === "disabled")
+    return (
+      <main className="page-shell shell" id="main-content">
+        <header className="page-intro">
+          <p className="eyebrow">Checkout</p>
+          <h1>Checkout is temporarily unavailable.</h1>
+          <p>
+            Your bag is saved on this device. Please try again shortly or
+            contact the gallery.
+          </p>
+        </header>
+      </main>
+    );
   const checkoutEnabled =
     paymentMode === "demo" ? true : isStripeCheckoutEnabled(paymentMode);
   const stripePublishableKey =

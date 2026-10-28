@@ -26,12 +26,36 @@ export async function PATCH(
   const admin = createAdminClient();
   const { data: current } = await admin
     .from("paintings")
-    .select("published_at")
+    .select("published_at, status, updated_at")
     .eq("id", id)
     .maybeSingle();
   if (!current)
     return NextResponse.json({ error: "Painting not found" }, { status: 404 });
-  const { error } = await admin
+  if (
+    current.status === "reserved" ||
+    value.status === "reserved" ||
+    (current.status === "sold" && value.status === "available")
+  )
+    return NextResponse.json(
+      {
+        error:
+          "Reserved paintings cannot be edited. Sold artwork can only be restocked through the order refund workflow.",
+      },
+      { status: 409 },
+    );
+  if (value.status === "available") {
+    const { count, error } = await admin
+      .from("painting_media")
+      .select("id", { count: "exact", head: true })
+      .eq("painting_id", id)
+      .eq("variant", "main");
+    if (error || !count)
+      return NextResponse.json(
+        { error: "Add a main photograph before publishing." },
+        { status: 400 },
+      );
+  }
+  const { data: updated, error } = await admin
     .from("paintings")
     .update({
       slug: value.slug,
@@ -63,8 +87,12 @@ export async function PATCH(
           ? null
           : (current.published_at ?? new Date().toISOString()),
     })
-    .eq("id", id);
-  if (error)
+    .eq("id", id)
+    .eq("status", current.status)
+    .eq("updated_at", current.updated_at)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated)
     return NextResponse.json({ error: "Painting not saved" }, { status: 409 });
   await admin.from("admin_audit_log").insert({
     actor_user_id: user.id,

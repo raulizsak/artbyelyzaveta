@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mocks.push }),
 }));
-vi.mock("@stripe/stripe-js", () => ({ loadStripe: mocks.loadStripe }));
+vi.mock("@stripe/stripe-js/pure", () => ({ loadStripe: mocks.loadStripe }));
 vi.mock("@stripe/react-stripe-js/checkout", () => ({
   CheckoutElementsProvider: ({ children }: { children: ReactNode }) => children,
   PaymentElement: () => <div>Stripe payment fields</div>,
@@ -92,13 +92,13 @@ function button(label: string) {
   return found;
 }
 
-async function renderPanel(mode: "test" | "live" = "test") {
+async function renderPanel(mode: "test" | "live" = "test", enabled = true) {
   await act(async () => {
     root.render(
       <StripePaymentPanel
         amount={34000}
         currency="AUD"
-        enabled
+        enabled={enabled}
         mode={mode}
         publishableKey={`pk_${mode}_regression`}
         request={request}
@@ -285,6 +285,26 @@ describe("embedded Stripe payment", () => {
       expect(mocks.confirm).not.toHaveBeenCalled();
     },
   );
+
+  it("recovers when Stripe script loading never settles", async () => {
+    vi.useFakeTimers();
+    mocks.loadStripe.mockReturnValue(new Promise(() => {}));
+    await renderPanel();
+    await act(async () => button("Continue to").click());
+    expect(button("Reserving artwork").disabled).toBe(true);
+    await act(async () => vi.advanceTimersByTimeAsync(20_001));
+    expect(button("Continue to").disabled).toBe(false);
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      "No payment has been submitted",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not load Stripe when checkout is disabled", async () => {
+    await renderPanel("test", false);
+    expect(mocks.loadStripe).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
   it("uses the same confirmation path in live mode without test-card advice", async () => {
     await prepare("live");

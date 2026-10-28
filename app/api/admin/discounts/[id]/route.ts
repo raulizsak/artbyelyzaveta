@@ -25,7 +25,10 @@ export async function PATCH(
   const parsed = discountInputSchema.safeParse(await request.json());
   if (!z.uuid().safeParse(id).success || !parsed.success)
     return NextResponse.json(
-      { error: parsed.error?.issues[0]?.message || "Review the discount details." },
+      {
+        error:
+          parsed.error?.issues[0]?.message || "Review the discount details.",
+      },
       { status: 400 },
     );
   const value = parsed.data;
@@ -34,7 +37,8 @@ export async function PATCH(
     p_discount_id: id,
     p_code: value.code,
     p_discount_type: value.discountType,
-    p_percent_off: value.discountType === "percentage" ? value.percentOff : null,
+    p_percent_off:
+      value.discountType === "percentage" ? value.percentOff : null,
     p_amount_off_cents:
       value.discountType === "fixed_amount" ? value.amountOffAud : null,
     p_applies_to: value.appliesTo,
@@ -58,15 +62,20 @@ export async function PATCH(
               ? "Discount not found."
               : "Discount could not be saved.",
       },
-      { status: error?.code === "23505" ? 409 : error?.code === "P0002" ? 404 : 503 },
+      {
+        status:
+          error?.code === "23505" ? 409 : error?.code === "P0002" ? 404 : 503,
+      },
     );
-  await createAdminClient().from("admin_audit_log").insert({
-    actor_user_id: user.id,
-    action: "discount.updated",
-    target_type: "discount",
-    target_id: id,
-    safe_metadata: { code: value.code, version: result.version ?? 1 },
-  });
+  await createAdminClient()
+    .from("admin_audit_log")
+    .insert({
+      actor_user_id: user.id,
+      action: "discount.updated",
+      target_type: "discount",
+      target_id: id,
+      safe_metadata: { code: value.code, version: result.version ?? 1 },
+    });
   const stripeSync = await syncDiscountCatalog(id);
   return NextResponse.json({ id, stripeSync });
 }
@@ -90,7 +99,12 @@ export async function DELETE(
   });
   if (error)
     return NextResponse.json(
-      { error: error.code === "P0002" ? "Discount not found." : "Discount could not be archived." },
+      {
+        error:
+          error.code === "P0002"
+            ? "Discount not found."
+            : "Discount could not be archived.",
+      },
       { status: error.code === "P0002" ? 404 : 503 },
     );
   await createAdminClient().from("admin_audit_log").insert({

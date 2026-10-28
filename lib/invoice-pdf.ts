@@ -102,8 +102,19 @@ export async function generateInvoicePdf(
   }
   summaryY -= 8;
   draw("Total paid", 375, summaryY, 12, bold);
-  draw(money(order.amount_paid_cents ?? order.total_cents), 475, summaryY, 12, bold);
-  draw(`Payment status: ${formatDisplayValue(order.payment_status)}`, 48, 150, 10);
+  draw(
+    money(order.amount_paid_cents ?? order.total_cents),
+    475,
+    summaryY,
+    12,
+    bold,
+  );
+  draw(
+    `Payment status: ${formatDisplayValue(order.payment_status)}`,
+    48,
+    150,
+    10,
+  );
   draw(
     (
       process.env.INVOICE_FOOTER || "Thank you for supporting original art."

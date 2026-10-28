@@ -1,9 +1,1 @@
-export default function Loading() {
-  return (
-    <main className="loading-page shell" aria-label="Loading">
-      <div />
-      <div />
-      <div />
-    </main>
-  );
-}
+export { ComingSoonSkeleton as default } from "@/components/page-skeletons";

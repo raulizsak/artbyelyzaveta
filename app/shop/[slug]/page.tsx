@@ -24,6 +24,7 @@ import {
 } from "@/lib/catalog";
 import { getPaintingBySlug } from "@/lib/catalog-data";
 import { getPaymentMode } from "@/lib/env";
+import { SITE_URL } from "@/lib/site";
 
 type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -33,6 +34,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: painting.seoTitle ?? `${painting.title} — Original Painting`,
     description: painting.seoDescription ?? painting.description,
+    alternates: { canonical: `/shop/${painting.slug}` },
+    openGraph: {
+      title: painting.title,
+      description: painting.seoDescription ?? painting.description,
+      url: `/shop/${painting.slug}`,
+      images: [
+        {
+          url: painting.media[0].largeSrc,
+          width: painting.media[0].width,
+          height: painting.media[0].height,
+          alt: painting.media[0].alt,
+        },
+      ],
+    },
   };
 }
 
@@ -44,6 +59,32 @@ export default async function ProductPage({ params }: Props) {
   const paymentMode = getPaymentMode();
   return (
     <main id="main-content">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: painting.title,
+            description: painting.description,
+            image: painting.media.map((image) =>
+              image.largeSrc.startsWith("/")
+                ? `${SITE_URL}${image.largeSrc}`
+                : image.largeSrc,
+            ),
+            url: `${SITE_URL}/shop/${painting.slug}`,
+            sku: painting.id,
+            brand: { "@type": "Brand", name: "Art by Elyzaveta" },
+            offers: {
+              "@type": "Offer",
+              priceCurrency: painting.currency,
+              price: (painting.priceCents / 100).toFixed(2),
+              availability: `https://schema.org/${painting.status === "available" ? "InStock" : painting.status === "sold" ? "SoldOut" : "OutOfStock"}`,
+              url: `${SITE_URL}/shop/${painting.slug}`,
+            },
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="product-breadcrumb shell">
         <Link href="/shop">Shop</Link>
         <ChevronRight aria-hidden="true" size={13} />
@@ -109,7 +150,9 @@ export default async function ProductPage({ params }: Props) {
               ? "Secure payments processed by Stripe."
               : paymentMode === "test"
                 ? "Stripe test mode. No real payment will be taken."
-                : "Preview checkout. No payment will be taken."}
+                : paymentMode === "demo"
+                  ? "Preview checkout. No payment will be taken."
+                  : "Checkout is temporarily unavailable. Your bag will be saved."}
           </p>
           <div className="assurance-list">
             <span>

@@ -27,7 +27,7 @@ const mediaSchema = z.object({
       }),
     )
     .min(1)
-    .max(30),
+    .max(150),
 });
 
 const reorderSchema = z.object({
@@ -56,6 +56,20 @@ export async function POST(
   if (!z.uuid().safeParse(id).success || !parsed.success)
     return NextResponse.json(
       { error: "Invalid media metadata" },
+      { status: 400 },
+    );
+  if (
+    parsed.data.media.some(
+      (item) =>
+        !item.storage_path.startsWith(`${id}/`) ||
+        !new RegExp(
+          `^${id}/[a-f0-9-]{36}/(?:original\\.(?:jpg|png|webp)|(?:thumbnail|card|main|large)\\.webp)$`,
+          "i",
+        ).test(item.storage_path),
+    )
+  )
+    return NextResponse.json(
+      { error: "Image paths must belong to this painting." },
       { status: 400 },
     );
   const admin = createAdminClient();
@@ -94,9 +108,7 @@ export async function PATCH(
   if (
     !z.uuid().safeParse(id).success ||
     !parsed.success ||
-    parsed.data.groupKeys.some(
-      (key) => parseMediaPositionToken(key) === null,
-    )
+    parsed.data.groupKeys.some((key) => parseMediaPositionToken(key) === null)
   )
     return NextResponse.json({ error: "Invalid image order" }, { status: 400 });
 
@@ -106,7 +118,10 @@ export async function PATCH(
     p_group_keys: parsed.data.groupKeys,
   });
   if (error)
-    return NextResponse.json({ error: "Image order not saved" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Image order not saved" },
+      { status: 409 },
+    );
   const admin = createAdminClient();
   await admin.from("admin_audit_log").insert({
     actor_user_id: user.id,
@@ -134,11 +149,7 @@ export async function DELETE(
   const position = parsed.success
     ? parseMediaPositionToken(parsed.data.groupKey)
     : null;
-  if (
-    !z.uuid().safeParse(id).success ||
-    !parsed.success ||
-    position === null
-  )
+  if (!z.uuid().safeParse(id).success || !parsed.success || position === null)
     return NextResponse.json({ error: "Invalid image" }, { status: 400 });
 
   const admin = createAdminClient();
@@ -149,30 +160,46 @@ export async function DELETE(
     .eq("position", position);
   if (readError || !media?.length)
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
-
-  const originals = media
-    .filter((item) => item.variant === "original")
-    .map((item) => item.storage_path);
-  const publicVariants = media
-    .filter((item) => item.variant !== "original")
-    .map((item) => item.storage_path);
-  if (originals.length) {
-    const removed = await admin.storage.from("artwork-originals").remove(originals);
-    if (removed.error)
-      return NextResponse.json({ error: "Original image not removed" }, { status: 503 });
-  }
-  if (publicVariants.length) {
-    const removed = await admin.storage.from("artwork-public").remove(publicVariants);
-    if (removed.error)
-      return NextResponse.json({ error: "Published image not removed" }, { status: 503 });
-  }
+  const [
+    { data: painting, error: paintingError },
+    { count, error: countError },
+  ] = await Promise.all([
+    admin.from("paintings").select("status").eq("id", id).maybeSingle(),
+    admin
+      .from("painting_media")
+      .select("id", { count: "exact", head: true })
+      .eq("painting_id", id)
+      .eq("variant", "main"),
+  ]);
+  if (paintingError || countError || !painting)
+    return NextResponse.json(
+      { error: "Photograph protection could not be checked. Try again." },
+      { status: 503 },
+    );
+  if (
+    painting.status === "reserved" ||
+    (painting.status === "available" && (count ?? 0) <= 1)
+  )
+    return NextResponse.json(
+      {
+        error:
+          "Keep a main photograph for published artwork. Reserved artwork cannot be changed during checkout.",
+      },
+      { status: 409 },
+    );
+  // Remove only the catalogue association. Retain public variants and private
+  // masters so historical order snapshots and other references stay valid.
+  // Storage reclamation requires a separate reviewed retention operation.
   const { error: deleteError } = await admin
     .from("painting_media")
     .delete()
     .eq("painting_id", id)
     .eq("position", position);
   if (deleteError)
-    return NextResponse.json({ error: "Image details not removed" }, { status: 503 });
+    return NextResponse.json(
+      { error: "Image details not removed" },
+      { status: 503 },
+    );
 
   await admin.from("admin_audit_log").insert({
     actor_user_id: user.id,

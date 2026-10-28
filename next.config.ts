@@ -18,7 +18,14 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    const supabase = "https://*.supabase.co wss://*.supabase.co";
+    const localUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const developmentSupabase =
+      isDevelopment &&
+      localUrl &&
+      /^http:\/\/(127\.0\.0\.1|localhost):55431\/?$/.test(localUrl)
+        ? localUrl.replace(/\/$/, "")
+        : "";
+    const supabase = `https://*.supabase.co wss://*.supabase.co ${developmentSupabase}`;
     const csp = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -29,7 +36,7 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline'",
       `connect-src 'self' ${supabase} https://api.stripe.com`,
       "frame-src https://js.stripe.com https://hooks.stripe.com",
-      `img-src 'self' data: blob: https://*.supabase.co`,
+      `img-src 'self' data: blob: https://*.supabase.co ${developmentSupabase}`,
       "font-src 'self' data:",
       ...(isDevelopment ? [] : ["upgrade-insecure-requests"]),
     ].join("; ");

@@ -16,7 +16,8 @@ export function getStripe(
   requireCheckoutEnabled = true,
 ) {
   const configuredMode = requestedMode ?? getPaymentMode();
-  if (configuredMode === "demo") throw new Error("Stripe is not active.");
+  if (configuredMode === "demo" || configuredMode === "disabled")
+    throw new Error("Stripe is not active.");
   const mode: StripeMode = configuredMode;
   const key = getStripeSecretKey(mode);
   if (!key || !key.startsWith(mode === "live" ? "sk_live_" : "sk_test_"))
@@ -39,6 +40,7 @@ export function getStripe(
 
 export function getCheckoutStripe() {
   const mode = getPaymentMode();
-  if (mode === "demo") throw new Error("Stripe checkout is not active.");
+  if (mode === "demo" || mode === "disabled")
+    throw new Error("Stripe checkout is not active.");
   return { mode, stripe: getStripe(mode) };
 }

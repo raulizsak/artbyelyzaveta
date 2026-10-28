@@ -12,6 +12,9 @@ export type PaintingMedia = {
   id: string;
   src: string;
   thumbnailSrc: string;
+  thumbnailWidth?: number;
+  cardSrc?: string;
+  cardWidth?: number;
   largeSrc: string;
   alt: string;
   width: number;

@@ -11,14 +11,16 @@ import {
   Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { safePreviewNext } from "@/lib/preview";
+import { AccountSkeleton } from "@/components/page-skeletons";
 
 type Factor = { id: string; friendly_name?: string; status: string };
 
 export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next")?.startsWith("/")
-    ? params.get("next")!
+  const next = params.get("next")
+    ? safePreviewNext(params.get("next"))
     : "/account/security";
   const [factors, setFactors] = useState<Factor[]>([]);
   const [enrollmentFactorId, setEnrollmentFactorId] = useState("");
@@ -30,23 +32,36 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
   const [currentAal, setCurrentAal] = useState<"aal1" | "aal2">("aal1");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(async () => {
-    const supabase = createClient();
-    const [{ data }, assurance] = await Promise.all([
-      supabase.auth.mfa.listFactors(),
-      supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-    ]);
-    const available = (data?.totp ?? []) as Factor[];
-    setFactors(available);
-    setCurrentAal(assurance.data?.currentLevel === "aal2" ? "aal2" : "aal1");
-    if (
-      isAdmin &&
-      next.startsWith("/admin") &&
-      assurance.data?.currentLevel !== "aal2"
-    ) {
-      const verified = available.find((factor) => factor.status === "verified");
-      if (verified) setVerifyingFactorId(verified.id);
+    try {
+      const supabase = createClient();
+      const [{ data, error: factorsError }, assurance] = await Promise.all([
+        supabase.auth.mfa.listFactors(),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+      if (factorsError || assurance.error)
+        throw new Error("security-unavailable");
+      const available = (data?.totp ?? []) as Factor[];
+      setFactors(available);
+      setCurrentAal(assurance.data?.currentLevel === "aal2" ? "aal2" : "aal1");
+      if (
+        isAdmin &&
+        next.startsWith("/admin") &&
+        assurance.data?.currentLevel !== "aal2"
+      ) {
+        const verified = available.find(
+          (factor) => factor.status === "verified",
+        );
+        if (verified) setVerifyingFactorId(verified.id);
+      }
+    } catch {
+      setError(
+        "Security details could not be loaded. Please refresh to try again.",
+      );
+    } finally {
+      setLoaded(true);
     }
   }, [isAdmin, next]);
 
@@ -144,6 +159,7 @@ export function MfaManager({ isAdmin }: { isAdmin: boolean }) {
     setBusy(false);
   }
 
+  if (!loaded) return <AccountSkeleton />;
   return (
     <section className="account-panel">
       <p className="eyebrow">Two-step verification</p>

@@ -1,7 +1,7 @@
 create extension if not exists pgtap with schema extensions;
 
 begin;
-select plan(25);
+select plan(30);
 
 update public.orders
 set fulfillment_status = 'shipped',
@@ -111,6 +111,10 @@ select is(
   'A non-delivered status preserves Shipped fulfillment'
 );
 
+select lives_ok($$select public.record_17track_webhook('33NEW1234567',1151,'InTransit','{"time":"2026-10-02T00:30:00Z","description":"In transit"}',false,null,null)$$, 'A new transit event is accepted');
+select lives_ok($$select public.record_17track_webhook('33NEW1234567',1151,'InfoReceived','{"time":"2026-10-02T00:10:00Z","description":"Older event"}',false,null,null)$$, 'An older event is harmless');
+select is((select tracking_status from public.orders where id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'),'InTransit','Older tracking information does not replace the newer status');
+
 create temporary table delivered_webhook_result as
 select public.record_17track_webhook(
   '33NEW1234567', 1151, 'Delivered',
@@ -132,6 +136,8 @@ select is(
 );
 select is((select count(*) from public.email_outbox where order_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1' and template = 'delivered'), 1::bigint, 'A duplicate webhook does not queue duplicate email');
 select is((select count(*) from public.order_events where order_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1' and event_type = 'delivered'), 1::bigint, 'A duplicate webhook does not duplicate the timeline');
+select lives_ok($$select public.record_17track_webhook('33NEW1234567',1151,'InTransit','{"time":"2026-10-01T23:00:00Z","description":"Delayed transit notification"}',false,null,null)$$,'A late transit notification is acknowledged after delivery');
+select is((select tracking_status from public.orders where id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1'),'Delivered','Delivered tracking presentation never regresses to In Transit');
 
 select is(
   public.record_17track_webhook(

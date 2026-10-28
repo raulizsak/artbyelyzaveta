@@ -65,6 +65,19 @@ export default async function Page() {
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
+  if (
+    [
+      paid,
+      preparing,
+      shipped,
+      returns,
+      available,
+      sold,
+      subscribers,
+      recent,
+    ].some((result) => result.error)
+  )
+    throw new Error("Dashboard records are temporarily unavailable.");
 
   const cards = [
     { label: "Paid · unfulfilled", value: paid.count, icon: ScrollText },
@@ -121,21 +134,25 @@ export default async function Page() {
               title: string;
               image_path: string | null;
             }>;
-            const image =
-              publicArtworkUrl(items[0]?.image_path) ||
-              "/optimized/artwork/cows-at-dusk-warm-room-thumbnail.webp";
+            const image = publicArtworkUrl(items[0]?.image_path) || null;
             return (
               <Link
                 className="admin-recent-order"
                 href={`/admin/orders/${order.order_reference}`}
                 key={order.order_reference}
               >
-                <Image
-                  alt={items[0]?.title ?? "Original artwork"}
-                  height={74}
-                  src={image}
-                  width={74}
-                />
+                {image ? (
+                  <Image
+                    alt={items[0]?.title ?? "Original artwork"}
+                    height={74}
+                    src={image}
+                    width={74}
+                  />
+                ) : (
+                  <span className="admin-missing-image">
+                    <ImageIcon aria-label="No photograph" size={28} />
+                  </span>
+                )}
                 <span className="admin-recent-order__reference">
                   <strong>
                     {order.order_reference}

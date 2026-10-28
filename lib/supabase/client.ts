@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/lib/supabase/database.types";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,5 +10,7 @@ export function createClient() {
   if (!url || !publishableKey) {
     throw new Error("Supabase browser configuration is unavailable.");
   }
-  return createBrowserClient<Database>(url, publishableKey);
+  return createBrowserClient<Database>(url, publishableKey, {
+    global: { fetch: fetchWithTimeout },
+  });
 }

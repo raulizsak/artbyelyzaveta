@@ -36,5 +36,7 @@ describe("private preview access", () => {
     );
     expect(safePreviewNext("https://example.com")).toBe("/home");
     expect(safePreviewNext("//example.com")).toBe("/home");
+    expect(safePreviewNext("/\\example.com")).toBe("/home");
+    expect(safePreviewNext("/\n/example.com")).toBe("/home");
   });
 });

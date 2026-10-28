@@ -8,9 +8,21 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("buyer can browse, use a duplicate-safe bag and reach safe demo checkout", async ({
+test("buyer can browse, use a duplicate-safe bag and reach disabled Stripe checkout", async ({
   page,
 }) => {
+  await page.route("**/api/checkout/quote", (route) =>
+    route.fulfill({
+      json: {
+        subtotalCents: 137000,
+        discountCents: 0,
+        shippingCents: 0,
+        totalCents: 137000,
+        currency: "AUD",
+        discounts: [],
+      },
+    }),
+  );
   await page.goto("/shop");
   await expect(
     page.getByRole("heading", { name: "Original Paintings" }),
@@ -55,11 +67,13 @@ test("buyer can browse, use a duplicate-safe bag and reach safe demo checkout", 
   await page.getByLabel("Postcode").fill("3000");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
-    page.getByRole("heading", { name: "No payment will be taken" }),
+    page.getByRole("heading", { name: "Secure card payment" }),
   ).toBeVisible();
   await expect(page.locator('input[autocomplete^="cc-"]')).toHaveCount(0);
   await expect(
-    page.getByText(/Demo checkout is currently disabled/),
+    page.getByText(
+      /Secure checkout is temporarily unavailable. No order will be/,
+    ),
   ).toBeVisible();
 });
 

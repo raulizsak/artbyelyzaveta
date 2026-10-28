@@ -76,7 +76,9 @@ export async function quoteCommerce(input: {
   const now = Date.now();
   if (discounts.some((discount) => !discount.active || discount.archived_at))
     throw new QuoteError("discount_invalid");
-  if (discounts.some((discount) => new Date(discount.starts_at).getTime() > now))
+  if (
+    discounts.some((discount) => new Date(discount.starts_at).getTime() > now)
+  )
     throw new QuoteError("discount_not_started");
   if (
     discounts.some(
@@ -93,7 +95,10 @@ export async function quoteCommerce(input: {
     )
   )
     throw new QuoteError("discount_minimum_not_met");
-  if (discounts.length > 1 && discounts.some((discount) => !discount.combinable))
+  if (
+    discounts.length > 1 &&
+    discounts.some((discount) => !discount.combinable)
+  )
     throw new QuoteError("discount_not_combinable");
 
   const discountIds = discounts.map((discount) => discount.id);
@@ -115,11 +120,16 @@ export async function quoteCommerce(input: {
     const uses = redemptions?.filter(
       (redemption) => redemption.discount_id === discount.id,
     );
-    if (discount.max_redemptions !== null && (uses?.length ?? 0) >= discount.max_redemptions)
+    if (
+      discount.max_redemptions !== null &&
+      (uses?.length ?? 0) >= discount.max_redemptions
+    )
       throw new QuoteError("discount_usage_limit");
     if (
       discount.one_use_per_customer &&
-      uses?.some((redemption) => redemption.normalized_email === normalizedEmail)
+      uses?.some(
+        (redemption) => redemption.normalized_email === normalizedEmail,
+      )
     )
       throw new QuoteError("discount_customer_limit");
     if (

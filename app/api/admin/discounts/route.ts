@@ -15,7 +15,10 @@ export async function POST(request: Request) {
   const parsed = discountInputSchema.safeParse(await request.json());
   if (!parsed.success)
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message || "Review the discount details." },
+      {
+        error:
+          parsed.error.issues[0]?.message || "Review the discount details.",
+      },
       { status: 400 },
     );
   const value = parsed.data;
@@ -24,7 +27,8 @@ export async function POST(request: Request) {
     p_discount_id: null,
     p_code: value.code,
     p_discount_type: value.discountType,
-    p_percent_off: value.discountType === "percentage" ? value.percentOff : null,
+    p_percent_off:
+      value.discountType === "percentage" ? value.percentOff : null,
     p_amount_off_cents:
       value.discountType === "fixed_amount" ? value.amountOffAud : null,
     p_applies_to: value.appliesTo,
@@ -49,13 +53,15 @@ export async function POST(request: Request) {
       { status: error?.code === "23505" ? 409 : 503 },
     );
 
-  await createAdminClient().from("admin_audit_log").insert({
-    actor_user_id: user.id,
-    action: "discount.created",
-    target_type: "discount",
-    target_id: result.id,
-    safe_metadata: { code: value.code, version: result.version ?? 1 },
-  });
+  await createAdminClient()
+    .from("admin_audit_log")
+    .insert({
+      actor_user_id: user.id,
+      action: "discount.created",
+      target_type: "discount",
+      target_id: result.id,
+      safe_metadata: { code: value.code, version: result.version ?? 1 },
+    });
   const stripeSync = await syncDiscountCatalog(result.id);
   return NextResponse.json({ id: result.id, stripeSync }, { status: 201 });
 }

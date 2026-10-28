@@ -4,7 +4,7 @@ import {
   type PaintingEditorMedia,
 } from "@/components/painting-editor";
 import { requireAdminAal2 } from "@/lib/auth/authorization";
-import { paintingInputSchema } from "@/lib/painting-admin";
+import { paintingCatalogueStateSchema } from "@/lib/painting-admin";
 import { mediaPositionToken } from "@/lib/painting-media";
 import { createAdminClient } from "@/lib/supabase/admin";
 export default async function Page({
@@ -20,9 +20,10 @@ export default async function Page({
     .eq("id", id)
     .maybeSingle();
   if (!data) notFound();
-  const catalogueState = paintingInputSchema
-    .pick({ orientation: true, status: true })
-    .parse({ orientation: data.orientation, status: data.status });
+  const catalogueState = paintingCatalogueStateSchema.parse({
+    orientation: data.orientation,
+    status: data.status,
+  });
   const storageBase = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/storage/v1/object/public/artwork-public/`;
   const mediaGroups = new Map<number, typeof data.painting_media>();
   for (const media of data.painting_media) {

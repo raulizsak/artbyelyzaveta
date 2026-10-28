@@ -16,10 +16,7 @@ export type CatalogSyncResult = {
 const modes: StripeMode[] = ["test", "live"];
 
 const fingerprint = (value: unknown) =>
-  createHash("sha256")
-    .update(JSON.stringify(value))
-    .digest("hex")
-    .slice(0, 16);
+  createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 16);
 
 async function findProduct(
   stripe: Stripe,
@@ -35,19 +32,21 @@ export async function syncPaintingCatalog(
   paintingId: string,
 ): Promise<CatalogSyncResult[]> {
   const admin = createAdminClient();
-  const [{ data: painting, error }, { data: existingRows }] = await Promise.all([
-    admin
-      .from("paintings")
-      .select(
-        "id, slug, title, description, price_cents, currency, status, published_at, painting_media(storage_path, kind, variant, position)",
-      )
-      .eq("id", paintingId)
-      .single(),
-    admin
-      .from("painting_stripe_catalog")
-      .select("*")
-      .eq("painting_id", paintingId),
-  ]);
+  const [{ data: painting, error }, { data: existingRows }] = await Promise.all(
+    [
+      admin
+        .from("paintings")
+        .select(
+          "id, slug, title, description, price_cents, currency, status, published_at, painting_media(storage_path, kind, variant, position)",
+        )
+        .eq("id", paintingId)
+        .single(),
+      admin
+        .from("painting_stripe_catalog")
+        .select("*")
+        .eq("painting_id", paintingId),
+    ],
+  );
   if (error || !painting) throw new Error("Painting is unavailable for sync.");
 
   const media = [...(painting.painting_media ?? [])].sort(
@@ -136,12 +135,9 @@ export async function syncPaintingCatalog(
               painting_slug: painting.slug,
             },
           };
-          price = await stripe.prices.create(
-            priceInput,
-            {
-              idempotencyKey: `painting-price-${painting.id}-${fingerprint(priceInput)}`,
-            },
-          );
+          price = await stripe.prices.create(priceInput, {
+            idempotencyKey: `painting-price-${painting.id}-${fingerprint(priceInput)}`,
+          });
           price = await stripe.prices.retrieve(price.id);
           if (!price.active)
             price = await stripe.prices.update(price.id, { active: true });

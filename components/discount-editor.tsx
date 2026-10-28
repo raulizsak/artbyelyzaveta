@@ -125,14 +125,23 @@ export function DiscountEditor({
       router.replace(`/admin/discounts/${data.id}`);
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Discount could not be saved.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Discount could not be saved.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   async function archive() {
-    if (!form.id || !window.confirm("Archive this discount? Historical orders will be preserved."))
+    if (
+      !form.id ||
+      !window.confirm(
+        "Archive this discount? Historical orders will be preserved.",
+      )
+    )
       return;
     setBusy(true);
     setError("");
@@ -147,7 +156,11 @@ export function DiscountEditor({
       router.replace("/admin/discounts");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Discount could not be archived.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Discount could not be archived.",
+      );
       setBusy(false);
     }
   }
@@ -158,7 +171,10 @@ export function DiscountEditor({
         <div>
           <p className="eyebrow">Promotion editor</p>
           <h1>{form.id ? `Edit ${form.code}` : "Create discount"}</h1>
-          <p>Configure the customer offer once; the shop remains the pricing authority.</p>
+          <p>
+            Configure the customer offer once; the shop remains the pricing
+            authority.
+          </p>
         </div>
         <button className="primary-action" disabled={busy} type="submit">
           {busy ? "Saving…" : "Save discount"}
@@ -166,38 +182,240 @@ export function DiscountEditor({
       </header>
 
       <section className="painting-editor__section">
-        <header><h2>Discount code</h2><p>Codes are case-insensitive for customers and saved in uppercase.</p></header>
+        <header>
+          <h2>Discount code</h2>
+          <p>
+            Codes are case-insensitive for customers and saved in uppercase.
+          </p>
+        </header>
         <div className="discount-code-field">
-          <label className="form-field"><span>Code</span><input autoCapitalize="characters" onChange={(event) => update("code", event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""))} placeholder="WELCOME10" required value={form.code} /></label>
-          <button className="secondary-action" onClick={() => update("code", generateCode())} type="button"><Dices size={17} /> Generate</button>
+          <label className="form-field">
+            <span>Code</span>
+            <input
+              autoCapitalize="characters"
+              onChange={(event) =>
+                update(
+                  "code",
+                  event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
+                )
+              }
+              placeholder="WELCOME10"
+              required
+              value={form.code}
+            />
+          </label>
+          <button
+            className="secondary-action"
+            onClick={() => update("code", generateCode())}
+            type="button"
+          >
+            <Dices size={17} /> Generate
+          </button>
         </div>
       </section>
 
       <section className="painting-editor__section">
-        <header><h2>Value</h2><p>Normal discounts apply only to the artwork subtotal; shipping remains separate.</p></header>
+        <header>
+          <h2>Value</h2>
+          <p>
+            Normal discounts apply only to the artwork subtotal; shipping
+            remains separate.
+          </p>
+        </header>
         <div className="discount-segmented">
-          <button aria-pressed={form.discountType === "percentage"} onClick={() => update("discountType", "percentage")} type="button">Percentage</button>
-          <button aria-pressed={form.discountType === "fixed_amount"} onClick={() => update("discountType", "fixed_amount")} type="button">Fixed amount</button>
+          <button
+            aria-pressed={form.discountType === "percentage"}
+            onClick={() => update("discountType", "percentage")}
+            type="button"
+          >
+            Percentage
+          </button>
+          <button
+            aria-pressed={form.discountType === "fixed_amount"}
+            onClick={() => update("discountType", "fixed_amount")}
+            type="button"
+          >
+            Fixed amount
+          </button>
         </div>
-        {form.discountType === "percentage" ? <label className="form-field"><span>Percentage off</span><div className="money-input"><input max="100" min="0.01" onChange={(event) => update("percentOff", event.target.value)} required step="0.01" type="number" value={form.percentOff} /><span>%</span></div></label> : <label className="form-field"><span>Amount off (AUD)</span><div className="money-input"><span>$</span><input inputMode="decimal" onChange={(event) => update("amountOffAud", event.target.value)} placeholder="100.00" required value={form.amountOffAud} /></div></label>}
+        {form.discountType === "percentage" ? (
+          <label className="form-field">
+            <span>Percentage off</span>
+            <div className="money-input">
+              <input
+                max="100"
+                min="0.01"
+                onChange={(event) => update("percentOff", event.target.value)}
+                required
+                step="0.01"
+                type="number"
+                value={form.percentOff}
+              />
+              <span>%</span>
+            </div>
+          </label>
+        ) : (
+          <label className="form-field">
+            <span>Amount off (AUD)</span>
+            <div className="money-input">
+              <span>$</span>
+              <input
+                inputMode="decimal"
+                onChange={(event) => update("amountOffAud", event.target.value)}
+                placeholder="100.00"
+                required
+                value={form.amountOffAud}
+              />
+            </div>
+          </label>
+        )}
       </section>
 
       <section className="painting-editor__section">
-        <header><h2>Eligibility</h2><p>Apply the code to every painting or select individual works.</p></header>
-        <div className="discount-segmented"><button aria-pressed={form.appliesTo === "all"} onClick={() => update("appliesTo", "all")} type="button">All paintings</button><button aria-pressed={form.appliesTo === "specific"} onClick={() => update("appliesTo", "specific")} type="button">Specific paintings</button></div>
-        {form.appliesTo === "specific" ? <div className="discount-product-picker"><label className="admin-topbar__search"><Search size={17} /><input onChange={(event) => setSearch(event.target.value)} placeholder="Search paintings" value={search} /></label><div>{filteredPaintings.map((painting) => <label className="consent-field" key={painting.id}><input checked={form.paintingIds.includes(painting.id)} onChange={() => togglePainting(painting.id)} type="checkbox" /><span><strong>{painting.title}</strong><small>{formatDisplayValue(painting.status)}</small></span></label>)}</div></div> : null}
+        <header>
+          <h2>Eligibility</h2>
+          <p>Apply the code to every painting or select individual works.</p>
+        </header>
+        <div className="discount-segmented">
+          <button
+            aria-pressed={form.appliesTo === "all"}
+            onClick={() => update("appliesTo", "all")}
+            type="button"
+          >
+            All paintings
+          </button>
+          <button
+            aria-pressed={form.appliesTo === "specific"}
+            onClick={() => update("appliesTo", "specific")}
+            type="button"
+          >
+            Specific paintings
+          </button>
+        </div>
+        {form.appliesTo === "specific" ? (
+          <div className="discount-product-picker">
+            <label className="admin-topbar__search">
+              <Search size={17} />
+              <input
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search paintings"
+                value={search}
+              />
+            </label>
+            <div>
+              {filteredPaintings.map((painting) => (
+                <label className="consent-field" key={painting.id}>
+                  <input
+                    checked={form.paintingIds.includes(painting.id)}
+                    onChange={() => togglePainting(painting.id)}
+                    type="checkbox"
+                  />
+                  <span>
+                    <strong>{painting.title}</strong>
+                    <small>{formatDisplayValue(painting.status)}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="painting-editor__section">
-        <header><h2>Dates & limits</h2><p>Times are entered and displayed in Melbourne time.</p></header>
-        <div className="form-grid two-col"><label className="form-field"><span>Start date and time</span><input onChange={(event) => update("startsAt", event.target.value)} required type="datetime-local" value={form.startsAt} /></label><label className="form-field"><span>End date and time (optional)</span><input onChange={(event) => update("endsAt", event.target.value)} type="datetime-local" value={form.endsAt} /></label><label className="form-field"><span>Maximum total uses (optional)</span><input min="1" onChange={(event) => update("maxRedemptions", event.target.value)} placeholder="Unlimited" type="number" value={form.maxRedemptions} /></label><label className="form-field"><span>Minimum artwork subtotal (AUD)</span><div className="money-input"><span>$</span><input inputMode="decimal" onChange={(event) => update("minimumSubtotalAud", event.target.value)} placeholder="No minimum" value={form.minimumSubtotalAud} /></div></label></div>
-        <div className="editor-checks"><label className="consent-field"><input checked={form.oneUsePerCustomer} onChange={(event) => update("oneUsePerCustomer", event.target.checked)} type="checkbox" /><span>One use per customer email</span></label><label className="consent-field"><input checked={form.combinable} onChange={(event) => update("combinable", event.target.checked)} type="checkbox" /><span>Can combine with other combinable codes</span></label><label className="consent-field"><input checked={form.active} onChange={(event) => update("active", event.target.checked)} type="checkbox" /><span>Active</span></label></div>
+        <header>
+          <h2>Dates & limits</h2>
+          <p>Times are entered and displayed in Melbourne time.</p>
+        </header>
+        <div className="form-grid two-col">
+          <label className="form-field">
+            <span>Start date and time</span>
+            <input
+              onChange={(event) => update("startsAt", event.target.value)}
+              required
+              type="datetime-local"
+              value={form.startsAt}
+            />
+          </label>
+          <label className="form-field">
+            <span>End date and time (optional)</span>
+            <input
+              onChange={(event) => update("endsAt", event.target.value)}
+              type="datetime-local"
+              value={form.endsAt}
+            />
+          </label>
+          <label className="form-field">
+            <span>Maximum total uses (optional)</span>
+            <input
+              min="1"
+              onChange={(event) => update("maxRedemptions", event.target.value)}
+              placeholder="Unlimited"
+              type="number"
+              value={form.maxRedemptions}
+            />
+          </label>
+          <label className="form-field">
+            <span>Minimum artwork subtotal (AUD)</span>
+            <div className="money-input">
+              <span>$</span>
+              <input
+                inputMode="decimal"
+                onChange={(event) =>
+                  update("minimumSubtotalAud", event.target.value)
+                }
+                placeholder="No minimum"
+                value={form.minimumSubtotalAud}
+              />
+            </div>
+          </label>
+        </div>
+        <div className="editor-checks">
+          <label className="consent-field">
+            <input
+              checked={form.oneUsePerCustomer}
+              onChange={(event) =>
+                update("oneUsePerCustomer", event.target.checked)
+              }
+              type="checkbox"
+            />
+            <span>One use per customer email</span>
+          </label>
+          <label className="consent-field">
+            <input
+              checked={form.combinable}
+              onChange={(event) => update("combinable", event.target.checked)}
+              type="checkbox"
+            />
+            <span>Can combine with other combinable codes</span>
+          </label>
+          <label className="consent-field">
+            <input
+              checked={form.active}
+              onChange={(event) => update("active", event.target.checked)}
+              type="checkbox"
+            />
+            <span>Active</span>
+          </label>
+        </div>
       </section>
 
       {error ? <p className="form-error">{error}</p> : null}
       <footer className="discount-editor__footer">
-        {form.id ? <button className="danger-action" disabled={busy} onClick={() => void archive()} type="button"><Trash2 size={16} /> Archive discount</button> : <span />}
-        <button className="primary-action" disabled={busy} type="submit">{busy ? "Saving…" : "Save discount"}</button>
+        {form.id ? (
+          <button
+            className="danger-action"
+            disabled={busy}
+            onClick={() => void archive()}
+            type="button"
+          >
+            <Trash2 size={16} /> Archive discount
+          </button>
+        ) : (
+          <span />
+        )}
+        <button className="primary-action" disabled={busy} type="submit">
+          {busy ? "Saving…" : "Save discount"}
+        </button>
       </footer>
     </form>
   );

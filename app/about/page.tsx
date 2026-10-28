@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Elyzaveta",
+  alternates: { canonical: "/about" },
   description:
     "Meet Melbourne artist Elyzaveta Izsak and discover the ideas behind her original paintings.",
 };

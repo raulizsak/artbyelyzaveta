@@ -39,7 +39,9 @@ export function toMelbourneDateTimeLocal(input: DateInput) {
     hourCycle: "h23",
   }).formatToParts(toDate(input));
   const value = Object.fromEntries(
-    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
   );
   return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
 }

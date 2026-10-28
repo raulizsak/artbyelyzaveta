@@ -6,9 +6,11 @@ import { ArrowLeft, ShieldCheck, Trash2 } from "lucide-react";
 import { useCart } from "@/components/cart-provider";
 import SmoothButton from "@/components/ui/smoothui/smooth-button";
 import { formatMoney, paintingDimensions } from "@/lib/catalog";
+import { CartContentSkeleton } from "@/components/page-skeletons";
 
 export function CartPageClient() {
   const cart = useCart();
+  if (!cart.hydrated) return <CartContentSkeleton />;
   if (!cart.count)
     return (
       <div className="empty-state cart-empty">

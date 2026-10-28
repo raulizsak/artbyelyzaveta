@@ -70,7 +70,12 @@ export function safePreviewNext(value: unknown) {
   if (
     typeof value !== "string" ||
     !value.startsWith("/") ||
-    value.startsWith("//")
+    value.startsWith("//") ||
+    /[\\]/.test(value) ||
+    [...value].some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    )
   )
     return "/home";
   return value;

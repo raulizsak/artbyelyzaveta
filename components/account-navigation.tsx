@@ -32,9 +32,11 @@ const links = [
 export function AccountNavigation({
   name,
   isAdmin,
+  canSaveCards = false,
 }: {
   name: string;
   isAdmin: boolean;
+  canSaveCards?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -45,20 +47,26 @@ export function AccountNavigation({
         <strong>{name}</strong>
       </div>
       <nav aria-label="Account navigation">
-        {links.map(({ label, href, icon: Icon }) => {
-          const active =
-            href === "/account" ? pathname === href : pathname.startsWith(href);
-          return (
-            <Link
-              aria-current={active ? "page" : undefined}
-              href={href}
-              key={href}
-            >
-              <Icon aria-hidden="true" size={18} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+        {links
+          .filter(
+            (link) => canSaveCards || link.href !== "/account/payment-methods",
+          )
+          .map(({ label, href, icon: Icon }) => {
+            const active =
+              href === "/account"
+                ? pathname === href
+                : pathname.startsWith(href);
+            return (
+              <Link
+                aria-current={active ? "page" : undefined}
+                href={href}
+                key={href}
+              >
+                <Icon aria-hidden="true" size={18} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
       </nav>
       {isAdmin ? (
         <Link className="secondary-action account-admin-link" href="/admin">

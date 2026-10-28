@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth-form";
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  title: "Sign in",
+};
 export default function Page() {
   return (
     <main className="auth-page shell" id="main-content">

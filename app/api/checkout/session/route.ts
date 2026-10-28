@@ -52,7 +52,11 @@ const stripeCountryCode = (country: string) => {
 
 export async function POST(request: Request) {
   const paymentMode = getPaymentMode();
-  if (paymentMode === "demo" || !isStripeCheckoutEnabled(paymentMode))
+  if (
+    paymentMode === "demo" ||
+    paymentMode === "disabled" ||
+    !isStripeCheckoutEnabled(paymentMode)
+  )
     return NextResponse.json(
       { error: "Secure checkout is temporarily unavailable." },
       { status: 503 },

@@ -54,13 +54,15 @@ export function ProductGallery({ painting }: { painting: Painting }) {
           </button>
         ))}
       </div>
-      <button
-        className="room-preview-button"
-        onClick={() => setRoomPreview(true)}
-        type="button"
-      >
-        <Sofa aria-hidden="true" size={18} /> Preview in a room
-      </button>
+      {rooms.length ? (
+        <button
+          className="room-preview-button"
+          onClick={() => setRoomPreview(true)}
+          type="button"
+        >
+          <Sofa aria-hidden="true" size={18} /> Preview in a room
+        </button>
+      ) : null}
 
       <BasicModal
         isOpen={lightbox}
@@ -86,8 +88,8 @@ export function ProductGallery({ painting }: { painting: Painting }) {
         title="See it in a room"
       >
         <p className="modal-intro">
-          Choose a setting to understand the painting’s landscape proportions.
-          Room images are an indicative preview.
+          Choose a setting to see how the painting sits in a room. Room images
+          are an indicative preview.
         </p>
         {currentRoom ? (
           <div className="room-preview-single">

@@ -10,7 +10,10 @@ import {
   getOrderForStripeSession,
 } from "@/lib/orders/confirmation";
 
-export const metadata: Metadata = { title: "Order confirmation" };
+export const metadata: Metadata = {
+  title: "Order confirmation",
+  robots: { index: false, follow: false },
+};
 export default async function ConfirmationPage({
   searchParams,
 }: {

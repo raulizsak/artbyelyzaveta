@@ -90,7 +90,10 @@ function render(
     ["Total paid", formattedTotal],
   ];
   const financialHtml = financialRows
-    .map(([label, amount]) => `<tr><th style="padding:6px 12px 6px 0;text-align:left;color:#6d6b61;font-weight:400">${escape(label)}</th><td style="padding:6px 0;text-align:right">${escape(amount)}</td></tr>`)
+    .map(
+      ([label, amount]) =>
+        `<tr><th style="padding:6px 12px 6px 0;text-align:left;color:#6d6b61;font-weight:400">${escape(label)}</th><td style="padding:6px 0;text-align:right">${escape(amount)}</td></tr>`,
+    )
     .join("");
   const subject =
     template === "admin_new_order"

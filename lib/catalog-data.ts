@@ -1,6 +1,7 @@
 import "server-only";
 
 import { unstable_noStore as noStore } from "next/cache";
+import { cache } from "react";
 import { isSupabaseConfigured } from "@/lib/env";
 import { LOCAL_CATALOGUE_FIXTURE } from "@/lib/catalog-fixture";
 import type {
@@ -88,6 +89,9 @@ const groupMedia = (rows: MediaRow[] | null): PaintingMedia[] => {
         id: main.id,
         src: publicStorageUrl(main.storage_path),
         thumbnailSrc: publicStorageUrl(thumbnail.storage_path),
+        thumbnailWidth: thumbnail.width,
+        cardSrc: publicStorageUrl((byVariant.get("card") ?? main).storage_path),
+        cardWidth: (byVariant.get("card") ?? main).width,
         largeSrc: publicStorageUrl(large.storage_path),
         alt: main.alt_text,
         width: main.width,
@@ -128,11 +132,20 @@ const mapPainting = (row: PaintingRow): Painting => ({
   createdAt: row.created_at,
 });
 
-export async function getPaintings(): Promise<Painting[]> {
+async function loadPaintings(slug?: string): Promise<Painting[]> {
   noStore();
-  if (!isSupabaseConfigured()) return LOCAL_CATALOGUE_FIXTURE;
+  if (!isSupabaseConfigured()) {
+    if (
+      process.env.ALLOW_LOCAL_CATALOGUE_FIXTURE === "true" &&
+      process.env.NODE_ENV !== "production"
+    )
+      return slug
+        ? LOCAL_CATALOGUE_FIXTURE.filter((painting) => painting.slug === slug)
+        : LOCAL_CATALOGUE_FIXTURE;
+    throw new Error("The collection is temporarily unavailable.");
+  }
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("paintings")
     .select(
       `
@@ -145,8 +158,12 @@ export async function getPaintings(): Promise<Painting[]> {
       )
     `,
     )
+    .in("status", ["available", "reserved", "sold"])
+    .not("published_at", "is", null)
     .order("featured", { ascending: false })
     .order("created_at", { ascending: false });
+  if (slug) query = query.eq("slug", slug);
+  const { data, error } = await query.abortSignal(AbortSignal.timeout(20_000));
 
   if (error) throw new Error(`Unable to load paintings: ${error.message}`);
   return (data as PaintingRow[])
@@ -154,10 +171,12 @@ export async function getPaintings(): Promise<Painting[]> {
     .filter((item) => item.media.length);
 }
 
-export async function getPaintingBySlug(slug: string) {
-  const paintings = await getPaintings();
+export const getPaintings = cache(() => loadPaintings());
+
+export const getPaintingBySlug = cache(async (slug: string) => {
+  const paintings = await loadPaintings(slug);
   return paintings.find((painting) => painting.slug === slug) ?? null;
-}
+});
 
 export async function getFeaturedPainting() {
   const paintings = await getPaintings();

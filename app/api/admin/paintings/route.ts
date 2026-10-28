@@ -40,12 +40,12 @@ export async function POST(request: Request) {
       signed: value.signed,
       ready_to_hang: value.readyToHang,
       certificate: value.certificate,
-      status: value.status,
+      status: "draft",
       featured: value.featured,
       year: value.year,
       seo_title: value.seoTitle,
       seo_description: value.seoDescription,
-      published_at: value.status === "draft" ? null : new Date().toISOString(),
+      published_at: null,
     })
     .select("id")
     .single();
