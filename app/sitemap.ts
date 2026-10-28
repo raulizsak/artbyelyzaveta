@@ -6,6 +6,11 @@ import { SITE_URL } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (
+    process.env.PREVIEW_GATE_ENABLED === "true" ||
+    process.env.ENABLE_SEARCH_INDEXING !== "true"
+  )
+    return [{ url: SITE_URL, changeFrequency: "monthly", priority: 1 }];
   const paintings = await getPaintings();
   const staticRoutes = [
     "",

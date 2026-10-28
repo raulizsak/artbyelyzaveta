@@ -1,246 +1,50 @@
 // @ts-nocheck -- Supabase Edge Functions are checked by Deno.
-import { createClient } from "npm:@supabase/supabase-js@2.112.4";
-import { formatDisplayValue } from "../../../lib/presentation.ts";
+// Compatibility entry point: all delivery uses the single fenced SMTP worker.
+const secret = Deno.env.get("EMAIL_OUTBOX_TRIGGER_SECRET") ?? "";
+const endpoint = "https://artbyelyzaveta.shop/api/internal/email-outbox";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const apiKey = Deno.env.get("SMTP2GO_API_KEY") ?? "";
-const sender = Deno.env.get("EMAIL_FROM") ?? "";
-const adminEmail = Deno.env.get("ADMIN_EMAIL") ?? "";
-const storeNotificationEmail =
-  Deno.env.get("STORE_NOTIFICATION_EMAIL") ?? adminEmail;
-const siteUrl = (
-  Deno.env.get("SITE_URL") ?? "https://artbyelyzaveta.shop"
-).replace(/\/$/, "");
-const testRecipient = Deno.env.get("EMAIL_TEST_RECIPIENT") ?? "";
-const triggerSecret = Deno.env.get("EMAIL_OUTBOX_TRIGGER_SECRET") ?? "";
-const live = Deno.env.get("EMAIL_DELIVERY_MODE") === "live";
-const supabase = createClient(supabaseUrl, serviceRole, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
-
-const escape = (value: unknown) =>
-  String(value ?? "").replace(
-    /[&<>"']/g,
-    (character) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        character
-      ],
-  );
-
-const formatMelbourneDate = (value: unknown) =>
-  new Intl.DateTimeFormat("en-AU", {
-    dateStyle: "long",
-    timeZone: "Australia/Melbourne",
-  }).format(new Date(String(value)));
-const labels: Record<string, string> = {
-  order_confirmation: "Your artwork order is confirmed",
-  admin_new_order: "New paid artwork order",
-  admin_return_requested: "New return request",
-  shipment: "Your artwork is on its way",
-  delivered: "Your artwork has been delivered",
-  order_update: "An update about your artwork order",
-  commission_update: "An update about your commissioned artwork",
-  refund_initiated: "Your refund has been initiated",
-  return_requested: "Return request received",
-  return_needs_information: "More information is needed",
-  return_approved: "Your return request is approved",
-  return_declined: "An update about your return request",
-  return_awaiting_return: "Return shipping details",
-  return_received: "Your returned artwork was received",
-  return_refunded: "Your refund is complete",
-  return_closed: "Your return request is closed",
-  refund_completed: "Your refund is complete",
-  invoice: "Your Art by Elyzaveta invoice",
-};
-
-function render(
-  template: string,
-  order: Record<string, unknown>,
-  items: Record<string, unknown>[],
-  payload: Record<string, unknown>,
-) {
-  const reference = String(order.order_reference);
-  const guestToken =
-    typeof payload.guest_token === "string" ? payload.guest_token : "";
-  const customerOrderUrl = guestToken
-    ? `${siteUrl}/order-access?token=${encodeURIComponent(guestToken)}`
-    : `${siteUrl}/account/orders/${encodeURIComponent(reference)}`;
-  const invoiceUrl = `${siteUrl}/api/orders/${encodeURIComponent(reference)}/invoice${guestToken ? `?token=${encodeURIComponent(guestToken)}` : ""}`;
-  const money = (cents: unknown) =>
-    new Intl.NumberFormat("en-AU", {
-      style: "currency",
-      currency: String(order.currency || "AUD"),
-      minimumFractionDigits: 2,
-    }).format(Number(cents || 0) / 100);
-  const formattedTotal = money(order.amount_paid_cents ?? order.total_cents);
-  const orderDiscounts = Array.isArray(order.order_discounts)
-    ? order.order_discounts
-    : [];
-  const financialRows = [
-    ["Artwork subtotal", money(order.subtotal_cents)],
-    ...orderDiscounts.map((discount) => [
-      String(discount.code || "Discount"),
-      `−${money(discount.applied_cents)}`,
-    ]),
-    ...(orderDiscounts.length === 0 && Number(order.discount_cents || 0) > 0
-      ? [["Discount", `−${money(order.discount_cents)}`]]
-      : []),
-    ["Shipping", money(order.shipping_cents)],
-    ["Total paid", formattedTotal],
-  ];
-  const financialHtml = financialRows
-    .map(
-      ([label, amount]) =>
-        `<tr><th style="padding:6px 12px 6px 0;text-align:left;color:#6d6b61;font-weight:400">${escape(label)}</th><td style="padding:6px 0;text-align:right">${escape(amount)}</td></tr>`,
-    )
-    .join("");
-  const subject =
-    template === "admin_new_order"
-      ? `New ${order.is_demo ? "demo " : ""}order ${order.order_reference} — ${items[0]?.title ?? "Original artwork"}`
-      : `${labels[template] ?? "Order update"} — ${order.order_reference}`;
-  const title = labels[template] ?? "Order update";
-  const safeMessage = order.customer_status_message
-    ? `<p style="padding:16px;background:#f7f3eb;border-left:3px solid #5f6548">${escape(order.customer_status_message)}</p>`
-    : "";
-  const commissionDetails = order.commission_stage
-    ? `<p>Commission stage: ${escape(formatDisplayValue(order.commission_stage))}${order.commission_eta ? `<br>Estimated completion: ${escape(order.commission_eta)}` : ""}${order.expected_dispatch ? `<br>Expected dispatch: ${escape(order.expected_dispatch)}` : ""}</p>`
-    : "";
-  if (template.startsWith("admin_")) {
-    const adminUrl = `${siteUrl}/admin/orders/${encodeURIComponent(reference)}`;
-    const address = (order.shipping_address ?? {}) as Record<string, unknown>;
-    const addressText = [
-      address.recipient_name,
-      address.line1,
-      address.line2,
-      [address.suburb, address.state, address.postcode]
-        .filter(Boolean)
-        .join(" "),
-      address.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
-    const adminTitle =
-      template === "admin_new_order"
-        ? order.is_demo
-          ? "New demo artwork order"
-          : "New paid artwork order"
-        : "New return request";
-    return {
-      subject,
-      html: `<!doctype html><html><body style="margin:0;background:#f7f3eb;color:#23261f;font-family:Arial,sans-serif"><div style="max-width:640px;margin:auto;padding:32px 20px"><div style="background:#fffdf8;border:1px solid #ded8cb;padding:32px"><p style="letter-spacing:.16em;font-size:12px;color:#5f6548">ART BY ELYZAVETA · ADMIN</p><h1 style="font-family:Georgia,serif;font-weight:500">${adminTitle}</h1>${order.is_demo ? '<p style="padding:10px;background:#f7f3eb"><strong>DEMO:</strong> No payment was taken and Stripe was not contacted.</p>' : ""}<p>Order <strong>${escape(reference)}</strong> is ready for review.</p><p>Date: ${escape(formatMelbourneDate(order.created_at))}<br>Artwork: ${escape(items[0]?.title ?? "Original artwork")}<br>Dimensions: ${escape(items[0]?.dimensions ?? "Not specified")}<br>Amount: ${escape(formattedTotal)}<br>Customer: ${escape(order.customer_first_name)} ${escape(order.customer_last_name)}<br>Email: ${escape(order.customer_email)}<br>Phone: ${escape(order.customer_phone ?? "Not provided")}<br>Delivery: ${escape(formatDisplayValue(order.delivery_method))}${addressText ? `<br>Address: ${escape(addressText)}` : ""}<br>Notes: ${escape(order.delivery_notes ?? "None")}<br>Payment: ${escape(formatDisplayValue(order.payment_status))}<br>Fulfilment: ${escape(formatDisplayValue(order.fulfillment_status))}</p><p><a href="${adminUrl}" style="display:inline-block;background:#5f6548;color:white;padding:12px 18px;text-decoration:none">Open order in admin</a></p><p style="font-size:13px;color:#6d6b61">Admin access requires your password and TOTP verification.</p></div></div></body></html>`,
-      text: `${adminTitle}\n\n${order.is_demo ? "DEMO: No payment was taken and Stripe was not contacted.\n\n" : ""}Order ${reference}\nDate: ${formatMelbourneDate(order.created_at)}\nArtwork: ${items[0]?.title ?? "Original artwork"}\nDimensions: ${items[0]?.dimensions ?? "Not specified"}\nAmount: ${formattedTotal}\nCustomer: ${order.customer_first_name} ${order.customer_last_name}\nEmail: ${order.customer_email}\nPhone: ${order.customer_phone ?? "Not provided"}\nDelivery: ${formatDisplayValue(order.delivery_method)}\nAddress: ${addressText || "Collection / manual arrangement"}\nNotes: ${order.delivery_notes ?? "None"}\nPayment: ${formatDisplayValue(order.payment_status)}\nFulfilment: ${formatDisplayValue(order.fulfillment_status)}\n\nOpen in admin: ${adminUrl}`,
-    };
-  }
-  const actionUrl = template === "invoice" ? invoiceUrl : customerOrderUrl;
-  const actionLabel =
-    template === "invoice" ? "View your invoice" : "View your order";
-  const html = `<!doctype html><html><body style="margin:0;background:#f7f3eb;color:#23261f;font-family:Arial,sans-serif"><div style="max-width:640px;margin:auto;padding:32px 20px"><div style="background:#fffdf8;border:1px solid #ded8cb;padding:32px"><p style="letter-spacing:.16em;font-size:12px;color:#5f6548">ART BY ELYZAVETA</p><h1 style="font-family:Georgia,serif;font-weight:500">${escape(title)}</h1><p>Hello ${escape(order.customer_first_name)},</p>${order.is_demo ? '<p style="padding:10px;background:#f7f3eb">This is a demo order. No payment was taken.</p>' : ""}<p>Order <strong>${escape(reference)}</strong> for ${escape(items[0]?.title ?? "your artwork")}.</p>${safeMessage}${commissionDetails}<table style="border-collapse:collapse;width:100%;margin:18px 0">${financialHtml}</table><p>Delivery: ${escape(formatDisplayValue(order.delivery_method))}<br>Payment: ${escape(formatDisplayValue(order.payment_status))}<br>Fulfilment: ${escape(formatDisplayValue(order.fulfillment_status))}</p>${order.tracking_url ? `<p><a href="${escape(order.tracking_url)}" style="color:#454a35">Track your delivery</a></p>` : ""}<p><a href="${escape(actionUrl)}" style="display:inline-block;background:#5f6548;color:white;padding:12px 18px;text-decoration:none">${actionLabel}</a></p><hr style="border:0;border-top:1px solid #ded8cb;margin:28px 0"><p style="font-size:13px;color:#6d6b61">Thank you for supporting original art.</p></div></div></body></html>`;
-  const text = `${title}\n\n${order.is_demo ? "This is a demo order. No payment was taken.\n\n" : ""}Order ${reference}\n${items[0]?.title ?? "Original artwork"}\n${financialRows.map(([label, amount]) => `${label}: ${amount}`).join("\n")}\nDelivery: ${formatDisplayValue(order.delivery_method)}\nPayment: ${formatDisplayValue(order.payment_status)}\nFulfilment: ${formatDisplayValue(order.fulfillment_status)}\n${order.customer_status_message ?? ""}\n\n${actionLabel}: ${actionUrl}`;
-  return { subject, html, text };
+async function authorised(value: string) {
+  if (!secret || !value) return false;
+  const encoder = new TextEncoder();
+  const [left, right] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(secret)),
+    crypto.subtle.digest("SHA-256", encoder.encode(value)),
+  ]);
+  const a = new Uint8Array(left),
+    b = new Uint8Array(right);
+  let difference = 0;
+  for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
+  return difference === 0;
 }
 
 Deno.serve(async (request) => {
   if (request.method !== "POST")
     return new Response("Method not allowed", { status: 405 });
-  if (
-    !apiKey ||
-    !sender ||
-    !storeNotificationEmail ||
-    !triggerSecret ||
-    (!live && !testRecipient)
-  )
-    return new Response("Email delivery is not configured", { status: 503 });
-  const suppliedTriggerSecret =
-    request.headers.get("x-email-outbox-secret") ?? "";
-  if (suppliedTriggerSecret !== triggerSecret)
+  if (!(await authorised(request.headers.get("x-email-outbox-secret") ?? "")))
     return new Response("Unauthorized", { status: 401 });
   const input = await request.json().catch(() => ({}));
-  const { data: jobs, error: claimError } = await supabase.rpc(
-    "claim_email_outbox",
-    { p_order_id: input.orderId ?? null, p_limit: 10 },
-  );
-  if (claimError) return new Response("Outbox unavailable", { status: 503 });
-  let sent = 0;
-  for (const job of jobs ?? []) {
-    try {
-      const { data: order } = await supabase
-        .from("orders")
-        .select("*, order_items(*), order_discounts(*)")
-        .eq("id", job.order_id)
-        .single();
-      const items = order.order_items ?? [];
-      let payload = job.payload ?? {};
-      if (!order.customer_user_id && typeof payload.guest_token !== "string") {
-        const { data: confirmation } = await supabase
-          .from("email_outbox")
-          .select("payload")
-          .eq("order_id", order.id)
-          .eq("template", "order_confirmation")
-          .maybeSingle();
-        if (typeof confirmation?.payload?.guest_token === "string")
-          payload = {
-            ...payload,
-            guest_token: confirmation.payload.guest_token,
-          };
-      }
-      const message = render(job.template, order, items, payload);
-      const intended =
-        job.recipient === "STORE_NOTIFICATION_EMAIL"
-          ? storeNotificationEmail
-          : job.recipient === "ADMIN_EMAIL"
-            ? adminEmail
-            : job.recipient;
-      const recipient = live ? intended : testRecipient;
-      const response = await fetch("https://api.smtp2go.com/v3/email/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          api_key: apiKey,
-          sender,
-          to: [recipient],
-          subject: live
-            ? message.subject
-            : `[TEST for ${intended}] ${message.subject}`,
-          html_body: message.html,
-          text_body: message.text,
-        }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result?.data?.succeeded !== 1)
-        throw new Error("provider-rejected");
-      await supabase
-        .from("email_outbox")
-        .update({
-          status: "sent",
-          provider_message_id: result?.data?.email_id ?? null,
-          last_error: null,
-          sent_at: new Date().toISOString(),
-        })
-        .eq("id", job.id)
-        .eq("status", "sending");
-      if (job.template === "delivered" && job.order_id) {
-        await supabase
-          .from("orders")
-          .update({ delivered_email_sent_at: new Date().toISOString() })
-          .eq("id", job.order_id)
-          .is("delivered_email_sent_at", null);
-      }
-      sent += 1;
-    } catch {
-      await supabase
-        .from("email_outbox")
-        .update({
-          status: "failed",
-          last_error: "Provider delivery failed",
-          next_attempt_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-        })
-        .eq("id", job.id)
-        .eq("status", "sending");
-    }
+  if (input.orderId != null && !/^[a-f0-9-]{36}$/i.test(input.orderId))
+    return new Response("Invalid order reference", { status: 400 });
+  try {
+    const result = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-email-outbox-secret": secret,
+      },
+      body: JSON.stringify(input.orderId ? { orderId: input.orderId } : {}),
+      signal: AbortSignal.timeout(90000),
+    });
+    return new Response(await result.text(), {
+      status: result.status,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch {
+    // A timeout does not authorise another SMTP send. The worker's lease and
+    // reconciliation state determine whether any job can be safely retried.
+    return new Response("Notification worker unavailable", { status: 503 });
   }
-  return Response.json({ processed: (jobs ?? []).length, sent });
 });

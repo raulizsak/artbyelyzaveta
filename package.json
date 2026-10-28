@@ -15,7 +15,7 @@
     "media:optimize": "node scripts/optimize-artwork.mjs",
     "migrate:convex": "node scripts/migrate-convex-to-supabase.mjs",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && next build",
+    "build": "npm run typecheck && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --check .",

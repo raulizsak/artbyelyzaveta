@@ -15,6 +15,7 @@ type TransactionalEmail = {
   html: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
+  messageId?: string;
 };
 
 const required = (name: string) => {
@@ -76,7 +77,7 @@ export function assertTransactionalEmailConfigured() {
     throw new Error("Email delivery mode is not configured");
 }
 
-export async function sendTransactionalEmail(input: TransactionalEmail) {
+export async function deliverTransactionalEmail(input: TransactionalEmail) {
   assertTransactionalEmailConfigured();
   const live = process.env.EMAIL_DELIVERY_MODE === "live";
   const recipient = live ? input.to : required("EMAIL_TEST_RECIPIENT");
@@ -88,6 +89,22 @@ export async function sendTransactionalEmail(input: TransactionalEmail) {
     text: input.text,
     html: input.html,
     attachments: input.attachments,
+    messageId: input.messageId,
+    disableFileAccess: true,
+    disableUrlAccess: true,
   });
-  return info.messageId || null;
+  const result = info as typeof info & { serverMessageId?: string };
+  if (Array.isArray(result.rejected) && result.rejected.length)
+    throw Object.assign(new Error("Recipient rejected"), {
+      command: "RCPT TO",
+      responseCode: 550,
+    });
+  return {
+    messageId: result.messageId || input.messageId || null,
+    providerId: result.serverMessageId || result.messageId || null,
+  };
+}
+
+export async function sendTransactionalEmail(input: TransactionalEmail) {
+  return (await deliverTransactionalEmail(input)).providerId;
 }

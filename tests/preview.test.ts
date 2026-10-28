@@ -4,6 +4,7 @@ import {
   hasValidPreviewCookie,
   isCorrectPreviewPassword,
   safePreviewNext,
+  requiresPreviewAccess,
 } from "../lib/preview";
 
 const originalPassword = process.env.PREVIEW_PASSWORD;
@@ -15,6 +16,29 @@ afterEach(() => {
 });
 
 describe("private preview access", () => {
+  it("protects direct store and payment APIs while preserving waitlist and authenticated provider callbacks", () => {
+    for (const path of [
+      "/home",
+      "/shop",
+      "/checkout",
+      "/admin",
+      "/api/checkout/session",
+      "/api/checkout/quote",
+      "/api/account/profile",
+      "/api/enquiries/contact",
+    ])
+      expect(requiresPreviewAccess(path), path).toBe(true);
+    for (const path of [
+      "/",
+      "/preview",
+      "/api/subscribers",
+      "/api/preview/access",
+      "/api/health",
+      "/api/stripe/webhook",
+      "/api/internal/email-outbox",
+    ])
+      expect(requiresPreviewAccess(path), path).toBe(false);
+  });
   it("accepts only the configured password", async () => {
     process.env.PREVIEW_PASSWORD = "private-test-password";
     expect(await isCorrectPreviewPassword("private-test-password")).toBe(true);

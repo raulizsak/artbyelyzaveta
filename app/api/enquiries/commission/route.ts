@@ -1,10 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { commissionSchema } from "@/lib/enquiries";
-import { sendShopNotification } from "@/lib/email/smtp2go";
-import { describeEmailFailure } from "@/lib/email/transport";
+import { triggerEmailOutbox } from "@/lib/email/outbox";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { formatMelbourneDateTime } from "@/lib/date-time";
 
 export async function POST(request: Request) {
   try {
@@ -79,77 +77,9 @@ export async function POST(request: Request) {
         throw filesError;
       }
     }
-    try {
-      const attachmentResults = await Promise.all(
-        inspirationFiles.map(async (file) => {
-          const [{ data: downloaded, error: downloadError }, signed] =
-            await Promise.all([
-              supabase.storage
-                .from("commission-inspiration")
-                .download(file.path),
-              supabase.storage
-                .from("commission-inspiration")
-                .createSignedUrl(file.path, 60 * 60 * 24 * 7),
-            ]);
-          if (downloadError || !downloaded)
-            throw downloadError ?? new Error("attachment-download-failed");
-          return {
-            attachment: {
-              filename: file.fileName,
-              content: Buffer.from(await downloaded.arrayBuffer()),
-              contentType: file.contentType,
-            },
-            link: signed.data?.signedUrl
-              ? { label: file.fileName, url: signed.data.signedUrl }
-              : null,
-          };
-        }),
-      );
-      const providerId = await sendShopNotification({
-        subject: `New commission enquiry — ${enquiry.subject}`,
-        heading: "New commission enquiry",
-        replyTo: enquiry.email,
-        rows: [
-          ["Name", enquiry.name],
-          ["Email", enquiry.email],
-          ["Phone", enquiry.phone],
-          ["Subject", enquiry.subject],
-          ["Dimensions", enquiry.dimensions],
-          ["Budget", enquiry.budget],
-          ["Timing", enquiry.timing],
-          ["Submitted", formatMelbourneDateTime(created.created_at)],
-          [
-            "Inspiration files",
-            inspirationFiles.length ? String(inspirationFiles.length) : "None",
-          ],
-          ["Additional notes", enquiry.notes],
-        ],
-        message: enquiry.inspiration,
-        attachments: attachmentResults.map((result) => result.attachment),
-        links: attachmentResults.flatMap((result) =>
-          result.link ? [result.link] : [],
-        ),
-      });
-      await supabase
-        .from("commission_enquiries")
-        .update({
-          notification_status: "sent",
-          notification_sent_at: new Date().toISOString(),
-          notification_provider_id: providerId,
-          notification_error: null,
-        })
-        .eq("id", created.id);
-    } catch (notificationError) {
-      const notificationFailure = describeEmailFailure(notificationError);
-      console.error("Commission enquiry email failed:", notificationFailure);
-      await supabase
-        .from("commission_enquiries")
-        .update({
-          notification_status: "failed",
-          notification_error: notificationFailure,
-        })
-        .eq("id", created.id);
-    }
+    after(async () => {
+      await triggerEmailOutbox();
+    });
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch {
     return NextResponse.json(

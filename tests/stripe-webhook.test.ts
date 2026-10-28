@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   email: vi.fn(),
   invoice: vi.fn(),
 }));
+vi.mock("next/server", () => ({ after: (callback: () => void) => callback() }));
 vi.mock("@/lib/stripe/server", () => ({
   getStripe: () => ({ webhooks: { constructEvent: mocks.event } }),
 }));
@@ -64,16 +65,16 @@ beforeEach(() => {
 describe("Stripe inventory webhook side effects", () => {
   it("syncs both catalogues from authoritative inventory after a refund", async () => {
     expect((await POST(request())).status).toBe(200);
-    expect(mocks.sync).toHaveBeenCalledWith("painting-id");
+    expect(mocks.sync).toHaveBeenCalledWith("painting-id", ["test"]);
     expect(mocks.email).toHaveBeenCalledWith("order-id");
     expect(mocks.invoice).not.toHaveBeenCalled();
   });
 
   it("retries failed catalogue sync without repeating order emails", async () => {
     mocks.rpc.mockResolvedValue({ data: { status: "duplicate" } });
-    mocks.sync.mockResolvedValue([{ mode: "live", status: "error" }]);
+    mocks.sync.mockResolvedValue([{ mode: "test", status: "error" }]);
     expect((await POST(request())).status).toBe(500);
-    expect(mocks.sync).toHaveBeenCalledWith("painting-id");
+    expect(mocks.sync).toHaveBeenCalledWith("painting-id", ["test"]);
     expect(mocks.email).not.toHaveBeenCalled();
   });
 
@@ -83,7 +84,7 @@ describe("Stripe inventory webhook side effects", () => {
       data: { object: { ...refundEvent.data.object, metadata: {} } },
     });
     expect((await POST(request())).status).toBe(200);
-    expect(mocks.sync).toHaveBeenCalledWith("painting-id");
+    expect(mocks.sync).toHaveBeenCalledWith("painting-id", ["test"]);
   });
 
   it("does not sync failed or ignored database events", async () => {
@@ -122,7 +123,7 @@ describe("Stripe inventory webhook side effects", () => {
       },
     });
     expect((await POST(request())).status).toBe(200);
-    expect(mocks.sync).toHaveBeenCalledWith("painting-id");
+    expect(mocks.sync).toHaveBeenCalledWith("painting-id", ["test"]);
     expect(mocks.invoice).toHaveBeenCalledWith("order-id", "test");
   });
 });

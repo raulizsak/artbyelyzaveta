@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { after } from "next/server";
 import { triggerEmailOutbox } from "@/lib/email/outbox";
 import type { StripeMode } from "@/lib/env";
 import { syncPaintingCatalog } from "@/lib/stripe/catalog";
@@ -134,7 +135,9 @@ export async function POST(request: Request) {
     (verified.event.type !== "checkout.session.completed" ||
       data.payment_status === "paid");
   if (orderId && resultStatus === "processed") {
-    await triggerEmailOutbox(orderId);
+    after(async () => {
+      await triggerEmailOutbox(orderId);
+    });
   }
   const canChangeInventory =
     isPaymentSuccess ||
@@ -159,7 +162,12 @@ export async function POST(request: Request) {
         .not("painting_id", "is", null);
       if (itemsError) throw itemsError;
       const syncResults = await Promise.all(
-        (items ?? []).map((item) => syncPaintingCatalog(item.painting_id!)),
+        (items ?? []).map((item) =>
+          syncPaintingCatalog(
+            item.painting_id!,
+            verified.mode === "test" ? ["test"] : ["test", "live"],
+          ),
+        ),
       );
       if (syncResults.flat().some((entry) => entry.status === "error"))
         return new Response("Catalogue processing failed", { status: 500 });

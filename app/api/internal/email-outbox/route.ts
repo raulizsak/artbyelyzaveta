@@ -14,6 +14,9 @@ export async function POST(request: Request) {
   const provided = request.headers.get("x-email-outbox-secret") ?? "";
   if (!expected || !matchesSecret(provided, expected))
     return new Response("Unauthorized", { status: 401 });
-  await triggerEmailOutbox();
-  return Response.json({ accepted: true });
+  const result = await triggerEmailOutbox();
+  return Response.json(result, {
+    status: result.workerError ? 503 : 200,
+    headers: { "Cache-Control": "no-store" },
+  });
 }

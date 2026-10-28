@@ -439,19 +439,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      email_delivery_attempts: {
+        Row: {
+          created_at: string;
+          diagnostic: string | null;
+          id: string;
+          lease_token: string;
+          outbox_id: string;
+          outcome: string;
+          provider_message_id: string | null;
+          smtp_message_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          diagnostic?: string | null;
+          id?: string;
+          lease_token: string;
+          outbox_id: string;
+          outcome: string;
+          provider_message_id?: string | null;
+          smtp_message_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          diagnostic?: string | null;
+          id?: string;
+          lease_token?: string;
+          outbox_id?: string;
+          outcome?: string;
+          provider_message_id?: string | null;
+          smtp_message_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "email_delivery_attempts_outbox_id_fkey";
+            columns: ["outbox_id"];
+            isOneToOne: false;
+            referencedRelation: "email_outbox";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       email_outbox: {
         Row: {
           attempts: number;
           created_at: string;
           dedupe_key: string;
+          delivery_started_at: string | null;
           id: string;
           last_error: string | null;
+          lease_token: string | null;
+          locked_at: string | null;
           next_attempt_at: string;
           order_id: string | null;
           payload: Json;
           provider_message_id: string | null;
           recipient: string;
           sent_at: string | null;
+          smtp_message_id: string | null;
+          source_id: string | null;
+          source_type: string;
           status: string;
           template: string;
           updated_at: string;
@@ -460,14 +510,20 @@ export type Database = {
           attempts?: number;
           created_at?: string;
           dedupe_key: string;
+          delivery_started_at?: string | null;
           id?: string;
           last_error?: string | null;
+          lease_token?: string | null;
+          locked_at?: string | null;
           next_attempt_at?: string;
           order_id?: string | null;
           payload?: Json;
           provider_message_id?: string | null;
           recipient: string;
           sent_at?: string | null;
+          smtp_message_id?: string | null;
+          source_id?: string | null;
+          source_type?: string;
           status?: string;
           template: string;
           updated_at?: string;
@@ -476,14 +532,20 @@ export type Database = {
           attempts?: number;
           created_at?: string;
           dedupe_key?: string;
+          delivery_started_at?: string | null;
           id?: string;
           last_error?: string | null;
+          lease_token?: string | null;
+          locked_at?: string | null;
           next_attempt_at?: string;
           order_id?: string | null;
           payload?: Json;
           provider_message_id?: string | null;
           recipient?: string;
           sent_at?: string | null;
+          smtp_message_id?: string | null;
+          source_id?: string | null;
+          source_type?: string;
           status?: string;
           template?: string;
           updated_at?: string;
@@ -497,6 +559,30 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      email_worker_health: {
+        Row: {
+          completed_at: string | null;
+          id: boolean;
+          last_error: string | null;
+          started_at: string | null;
+          summary: Json;
+        };
+        Insert: {
+          completed_at?: string | null;
+          id?: boolean;
+          last_error?: string | null;
+          started_at?: string | null;
+          summary?: Json;
+        };
+        Update: {
+          completed_at?: string | null;
+          id?: boolean;
+          last_error?: string | null;
+          started_at?: string | null;
+          summary?: Json;
+        };
+        Relationships: [];
       };
       invoices: {
         Row: {
@@ -922,59 +1008,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      painting_stripe_catalog: {
-        Row: {
-          created_at: string;
-          id: string;
-          last_synced_at: string | null;
-          mode: string;
-          painting_id: string;
-          stripe_price_id: string | null;
-          stripe_product_id: string | null;
-          sync_error: string | null;
-          sync_status: string;
-          synced_currency: string | null;
-          synced_price_cents: number | null;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          last_synced_at?: string | null;
-          mode: string;
-          painting_id: string;
-          stripe_price_id?: string | null;
-          stripe_product_id?: string | null;
-          sync_error?: string | null;
-          sync_status?: string;
-          synced_currency?: string | null;
-          synced_price_cents?: number | null;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          last_synced_at?: string | null;
-          mode?: string;
-          painting_id?: string;
-          stripe_price_id?: string | null;
-          stripe_product_id?: string | null;
-          sync_error?: string | null;
-          sync_status?: string;
-          synced_currency?: string | null;
-          synced_price_cents?: number | null;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "painting_stripe_catalog_painting_id_fkey";
-            columns: ["painting_id"];
-            isOneToOne: false;
-            referencedRelation: "paintings";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       painting_media: {
         Row: {
           alt_text: string;
@@ -1028,6 +1061,59 @@ export type Database = {
           },
         ];
       };
+      painting_stripe_catalog: {
+        Row: {
+          created_at: string;
+          id: string;
+          last_synced_at: string | null;
+          mode: string;
+          painting_id: string;
+          stripe_price_id: string | null;
+          stripe_product_id: string | null;
+          sync_error: string | null;
+          sync_status: string;
+          synced_currency: string | null;
+          synced_price_cents: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          mode: string;
+          painting_id: string;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: string;
+          synced_currency?: string | null;
+          synced_price_cents?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          last_synced_at?: string | null;
+          mode?: string;
+          painting_id?: string;
+          stripe_price_id?: string | null;
+          stripe_product_id?: string | null;
+          sync_error?: string | null;
+          sync_status?: string;
+          synced_currency?: string | null;
+          synced_price_cents?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "painting_stripe_catalog_painting_id_fkey";
+            columns: ["painting_id"];
+            isOneToOne: false;
+            referencedRelation: "paintings";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       paintings: {
         Row: {
           category: string | null;
@@ -1045,13 +1131,13 @@ export type Database = {
           medium: string | null;
           orientation: string | null;
           price_cents: number;
-          shipping_cents: number;
           published_at: string | null;
           ready_to_hang: boolean;
           reserved_order_id: string | null;
           reserved_until: string | null;
           seo_description: string | null;
           seo_title: string | null;
+          shipping_cents: number;
           signed: boolean;
           slug: string;
           status: string;
@@ -1078,13 +1164,13 @@ export type Database = {
           medium?: string | null;
           orientation?: string | null;
           price_cents: number;
-          shipping_cents?: number;
           published_at?: string | null;
           ready_to_hang?: boolean;
           reserved_order_id?: string | null;
           reserved_until?: string | null;
           seo_description?: string | null;
           seo_title?: string | null;
+          shipping_cents?: number;
           signed?: boolean;
           slug: string;
           status?: string;
@@ -1111,13 +1197,13 @@ export type Database = {
           medium?: string | null;
           orientation?: string | null;
           price_cents?: number;
-          shipping_cents?: number;
           published_at?: string | null;
           ready_to_hang?: boolean;
           reserved_order_id?: string | null;
           reserved_until?: string | null;
           seo_description?: string | null;
           seo_title?: string | null;
+          shipping_cents?: number;
           signed?: boolean;
           slug?: string;
           status?: string;
@@ -1441,13 +1527,9 @@ export type Database = {
           is_admin: boolean;
         }[];
       };
-      admin_mark_order_delivered: {
-        Args: {
-          p_latest_event?: Json;
-          p_order_id: string;
-          p_tracking_status?: string;
-        };
-        Returns: Json;
+      admin_archive_discount: {
+        Args: { p_discount_id: string };
+        Returns: undefined;
       };
       admin_claim_tracking_registration: {
         Args: { p_order_id: string };
@@ -1462,9 +1544,13 @@ export type Database = {
         };
         Returns: Json;
       };
-      admin_archive_discount: {
-        Args: { p_discount_id: string };
-        Returns: undefined;
+      admin_mark_order_delivered: {
+        Args: {
+          p_latest_event?: Json;
+          p_order_id: string;
+          p_tracking_status?: string;
+        };
+        Returns: Json;
       };
       admin_reorder_painting_media: {
         Args: { p_group_keys: string[]; p_painting_id: string };
@@ -1500,6 +1586,7 @@ export type Database = {
           p_stage: string;
         };
         Returns: {
+          amount_paid_cents: number | null;
           amount_refunded_cents: number;
           billing_address: Json | null;
           cancelled_at: string | null;
@@ -1514,8 +1601,11 @@ export type Database = {
           customer_status_message: string | null;
           customer_user_id: string | null;
           delivered_at: string | null;
+          delivered_email_queued_at: string | null;
+          delivered_email_sent_at: string | null;
           delivery_method: string;
           delivery_notes: string | null;
+          discount_cents: number;
           expected_dispatch: string | null;
           fulfillment_status: string;
           guest_access_expires_at: string | null;
@@ -1523,6 +1613,10 @@ export type Database = {
           id: string;
           internal_admin_notes: string | null;
           is_demo: boolean;
+          last_tracking_check_at: string | null;
+          last_tracking_webhook_at: string | null;
+          latest_tracking_event: Json | null;
+          next_tracking_check_at: string | null;
           normalized_email: string | null;
           order_reference: string;
           order_status: string;
@@ -1537,12 +1631,25 @@ export type Database = {
           shipping_method: string | null;
           stripe_checkout_session_id: string | null;
           stripe_customer_id: string | null;
+          stripe_discount_coupon_id: string | null;
+          stripe_mode: string | null;
           stripe_payment_intent_id: string | null;
           subtotal_cents: number;
           tax_cents: number;
           total_cents: number;
           tracking_carrier: string | null;
+          tracking_carrier_code: number | null;
+          tracking_error: string | null;
           tracking_number: string | null;
+          tracking_provider: string | null;
+          tracking_registered_at: string | null;
+          tracking_registered_carrier_code: number | null;
+          tracking_registered_number: string | null;
+          tracking_registration_attempted_at: string | null;
+          tracking_registration_error: string | null;
+          tracking_registration_status: string;
+          tracking_retry_count: number;
+          tracking_status: string | null;
           tracking_url: string | null;
           updated_at: string;
         };
@@ -1561,6 +1668,7 @@ export type Database = {
           p_order_id: string;
         };
         Returns: {
+          amount_paid_cents: number | null;
           amount_refunded_cents: number;
           billing_address: Json | null;
           cancelled_at: string | null;
@@ -1575,8 +1683,11 @@ export type Database = {
           customer_status_message: string | null;
           customer_user_id: string | null;
           delivered_at: string | null;
+          delivered_email_queued_at: string | null;
+          delivered_email_sent_at: string | null;
           delivery_method: string;
           delivery_notes: string | null;
+          discount_cents: number;
           expected_dispatch: string | null;
           fulfillment_status: string;
           guest_access_expires_at: string | null;
@@ -1584,6 +1695,10 @@ export type Database = {
           id: string;
           internal_admin_notes: string | null;
           is_demo: boolean;
+          last_tracking_check_at: string | null;
+          last_tracking_webhook_at: string | null;
+          latest_tracking_event: Json | null;
+          next_tracking_check_at: string | null;
           normalized_email: string | null;
           order_reference: string;
           order_status: string;
@@ -1598,12 +1713,25 @@ export type Database = {
           shipping_method: string | null;
           stripe_checkout_session_id: string | null;
           stripe_customer_id: string | null;
+          stripe_discount_coupon_id: string | null;
+          stripe_mode: string | null;
           stripe_payment_intent_id: string | null;
           subtotal_cents: number;
           tax_cents: number;
           total_cents: number;
           tracking_carrier: string | null;
+          tracking_carrier_code: number | null;
+          tracking_error: string | null;
           tracking_number: string | null;
+          tracking_provider: string | null;
+          tracking_registered_at: string | null;
+          tracking_registered_carrier_code: number | null;
+          tracking_registered_number: string | null;
+          tracking_registration_attempted_at: string | null;
+          tracking_registration_error: string | null;
+          tracking_registration_status: string;
+          tracking_retry_count: number;
+          tracking_status: string | null;
           tracking_url: string | null;
           updated_at: string;
         };
@@ -1642,8 +1770,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      attach_stripe_checkout_session: {
+      attach_commerce_checkout_session: {
         Args: {
+          p_discount_coupon_id?: string;
+          p_mode: string;
           p_order_id: string;
           p_payment_intent_id?: string;
           p_session_id: string;
@@ -1651,10 +1781,8 @@ export type Database = {
         };
         Returns: undefined;
       };
-      attach_commerce_checkout_session: {
+      attach_stripe_checkout_session: {
         Args: {
-          p_discount_coupon_id?: string;
-          p_mode: string;
           p_order_id: string;
           p_payment_intent_id?: string;
           p_session_id: string;
@@ -1668,14 +1796,20 @@ export type Database = {
           attempts: number;
           created_at: string;
           dedupe_key: string;
+          delivery_started_at: string | null;
           id: string;
           last_error: string | null;
+          lease_token: string | null;
+          locked_at: string | null;
           next_attempt_at: string;
           order_id: string | null;
           payload: Json;
           provider_message_id: string | null;
           recipient: string;
           sent_at: string | null;
+          smtp_message_id: string | null;
+          source_id: string | null;
+          source_type: string;
           status: string;
           template: string;
           updated_at: string;
@@ -1761,7 +1895,28 @@ export type Database = {
         }[];
       };
       delete_my_address: { Args: { p_id: string }; Returns: boolean };
+      enqueue_notification_alert: { Args: never; Returns: undefined };
+      finish_email_delivery: {
+        Args: {
+          p_diagnostic?: string;
+          p_id: string;
+          p_lease: string;
+          p_message_id?: string;
+          p_outcome: string;
+          p_provider_id?: string;
+        };
+        Returns: boolean;
+      };
       lookup_guest_order: { Args: { p_token: string }; Returns: string };
+      process_commerce_stripe_event: {
+        Args: {
+          p_data: Json;
+          p_event_id: string;
+          p_event_type: string;
+          p_mode: string;
+        };
+        Returns: Json;
+      };
       process_demo_refund: {
         Args: {
           p_actor_user_id: string;
@@ -1774,6 +1929,7 @@ export type Database = {
           p_restock?: boolean;
         };
         Returns: {
+          amount_paid_cents: number | null;
           amount_refunded_cents: number;
           billing_address: Json | null;
           cancelled_at: string | null;
@@ -1788,8 +1944,11 @@ export type Database = {
           customer_status_message: string | null;
           customer_user_id: string | null;
           delivered_at: string | null;
+          delivered_email_queued_at: string | null;
+          delivered_email_sent_at: string | null;
           delivery_method: string;
           delivery_notes: string | null;
+          discount_cents: number;
           expected_dispatch: string | null;
           fulfillment_status: string;
           guest_access_expires_at: string | null;
@@ -1797,6 +1956,10 @@ export type Database = {
           id: string;
           internal_admin_notes: string | null;
           is_demo: boolean;
+          last_tracking_check_at: string | null;
+          last_tracking_webhook_at: string | null;
+          latest_tracking_event: Json | null;
+          next_tracking_check_at: string | null;
           normalized_email: string | null;
           order_reference: string;
           order_status: string;
@@ -1811,12 +1974,25 @@ export type Database = {
           shipping_method: string | null;
           stripe_checkout_session_id: string | null;
           stripe_customer_id: string | null;
+          stripe_discount_coupon_id: string | null;
+          stripe_mode: string | null;
           stripe_payment_intent_id: string | null;
           subtotal_cents: number;
           tax_cents: number;
           total_cents: number;
           tracking_carrier: string | null;
+          tracking_carrier_code: number | null;
+          tracking_error: string | null;
           tracking_number: string | null;
+          tracking_provider: string | null;
+          tracking_registered_at: string | null;
+          tracking_registered_carrier_code: number | null;
+          tracking_registered_number: string | null;
+          tracking_registration_attempted_at: string | null;
+          tracking_registration_error: string | null;
+          tracking_registration_status: string;
+          tracking_retry_count: number;
+          tracking_status: string | null;
           tracking_url: string | null;
           updated_at: string;
         };
@@ -1840,15 +2016,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      process_commerce_stripe_event: {
-        Args: {
-          p_data: Json;
-          p_event_id: string;
-          p_event_type: string;
-          p_mode: string;
-        };
-        Returns: Json;
-      };
       process_setup_intent_event: {
         Args: {
           p_brand: string;
@@ -1865,6 +2032,18 @@ export type Database = {
         Args: { p_data: Json; p_event_id: string; p_event_type: string };
         Returns: Json;
       };
+      record_17track_webhook: {
+        Args: {
+          p_carrier_code: number;
+          p_delivered: boolean;
+          p_delivered_at: string;
+          p_error: string;
+          p_latest_event: Json;
+          p_tracking_number: string;
+          p_tracking_status: string;
+        };
+        Returns: Json;
+      };
       record_tracking_result: {
         Args: {
           p_delivered: boolean;
@@ -1877,18 +2056,6 @@ export type Database = {
         };
         Returns: Json;
       };
-      record_17track_webhook: {
-        Args: {
-          p_carrier_code: number;
-          p_delivered: boolean;
-          p_delivered_at: string | null;
-          p_error: string | null;
-          p_latest_event: Json | null;
-          p_tracking_number: string;
-          p_tracking_status: string | null;
-        };
-        Returns: Json;
-      };
       release_checkout_reservation: {
         Args: { p_order_id: string; p_reason?: string };
         Returns: boolean;
@@ -1896,6 +2063,7 @@ export type Database = {
       reset_demo_order: {
         Args: { p_actor_user_id: string; p_order_id: string };
         Returns: {
+          amount_paid_cents: number | null;
           amount_refunded_cents: number;
           billing_address: Json | null;
           cancelled_at: string | null;
@@ -1910,8 +2078,11 @@ export type Database = {
           customer_status_message: string | null;
           customer_user_id: string | null;
           delivered_at: string | null;
+          delivered_email_queued_at: string | null;
+          delivered_email_sent_at: string | null;
           delivery_method: string;
           delivery_notes: string | null;
+          discount_cents: number;
           expected_dispatch: string | null;
           fulfillment_status: string;
           guest_access_expires_at: string | null;
@@ -1919,6 +2090,10 @@ export type Database = {
           id: string;
           internal_admin_notes: string | null;
           is_demo: boolean;
+          last_tracking_check_at: string | null;
+          last_tracking_webhook_at: string | null;
+          latest_tracking_event: Json | null;
+          next_tracking_check_at: string | null;
           normalized_email: string | null;
           order_reference: string;
           order_status: string;
@@ -1933,12 +2108,25 @@ export type Database = {
           shipping_method: string | null;
           stripe_checkout_session_id: string | null;
           stripe_customer_id: string | null;
+          stripe_discount_coupon_id: string | null;
+          stripe_mode: string | null;
           stripe_payment_intent_id: string | null;
           subtotal_cents: number;
           tax_cents: number;
           total_cents: number;
           tracking_carrier: string | null;
+          tracking_carrier_code: number | null;
+          tracking_error: string | null;
           tracking_number: string | null;
+          tracking_provider: string | null;
+          tracking_registered_at: string | null;
+          tracking_registered_carrier_code: number | null;
+          tracking_registered_number: string | null;
+          tracking_registration_attempted_at: string | null;
+          tracking_registration_error: string | null;
+          tracking_registration_status: string;
+          tracking_retry_count: number;
+          tracking_status: string | null;
           tracking_url: string | null;
           updated_at: string;
         };
@@ -1948,6 +2136,15 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      resolve_email_delivery: {
+        Args: {
+          p_id: string;
+          p_note: string;
+          p_provider_id?: string;
+          p_resolution: string;
+        };
+        Returns: boolean;
       };
       save_my_address: {
         Args: {
@@ -1983,6 +2180,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      start_email_delivery: {
+        Args: { p_id: string; p_lease: string };
+        Returns: boolean;
       };
       update_my_profile: {
         Args: { p_first_name: string; p_last_name: string; p_phone?: string };

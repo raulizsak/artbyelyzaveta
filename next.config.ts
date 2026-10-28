@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     // All storefront images are pre-optimized before upload. This avoids
-    // runtime Sharp work and protects the 512 MB Render Free instance.
+    // runtime Sharp work and protects the 512 MB Render instance.
     unoptimized: true,
     remotePatterns: [
       {

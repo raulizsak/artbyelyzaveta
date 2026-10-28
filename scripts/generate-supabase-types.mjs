@@ -25,7 +25,34 @@ if (!stdout.startsWith("export type Json")) {
   throw new Error("Supabase did not return a valid TypeScript schema.");
 }
 
-await writeFile(output, `${stdout.trimEnd()}\n`, "utf8");
+// PostgreSQL does not expose argument nullability to the generator. These
+// existing RPCs deliberately accept NULL for inapplicable/cleared fields.
+const nullableArguments = {
+  admin_save_discount: [
+    "p_discount_id",
+    "p_percent_off",
+    "p_amount_off_cents",
+    "p_ends_at",
+    "p_max_redemptions",
+    "p_minimum_subtotal_cents",
+  ],
+  admin_complete_tracking_registration: ["p_error"],
+};
+let types = stdout;
+for (const [name, arguments_] of Object.entries(nullableArguments)) {
+  const block = new RegExp("(\\b" + name + ": \\{\\s*Args: \\{)([^}]*)(\\})");
+  if (!block.test(types))
+    throw new Error("Expected RPC missing from generated types: " + name);
+  types = types.replace(block, (_, head, body, tail) => {
+    for (const argument of arguments_)
+      body = body.replace(
+        new RegExp("(\\b" + argument + "\\??: )(string|number)(?![\\w|])"),
+        "$1$2 | null",
+      );
+    return head + body + tail;
+  });
+}
+await writeFile(output, `${types.trimEnd()}\n`, "utf8");
 if (stderr.trim()) process.stderr.write(stderr);
 console.log(
   `Generated ${path.relative(root, output)} from ${projectArg ? "the linked cloud project" : "local Supabase"}.`,

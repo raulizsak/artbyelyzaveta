@@ -32,6 +32,21 @@ export function isPreviewGateEnabled() {
   return process.env.PREVIEW_GATE_ENABLED === "true";
 }
 
+const publicPreviewPaths = new Set([
+  "/",
+  "/preview",
+  "/api/preview/access",
+  "/api/subscribers",
+  "/api/health",
+  "/api/stripe/webhook",
+  "/api/internal/email-outbox",
+  "/auth/callback",
+]);
+
+export function requiresPreviewAccess(pathname: string) {
+  return !publicPreviewPaths.has(pathname);
+}
+
 export async function createPreviewCookieValue() {
   const secret = process.env.PREVIEW_COOKIE_SECRET?.trim();
   if (!secret) throw new Error("Preview cookie secret is not configured");

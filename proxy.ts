@@ -5,14 +5,21 @@ import {
   hasValidPreviewCookie,
   isPreviewGateEnabled,
   PREVIEW_COOKIE_NAME,
+  requiresPreviewAccess,
 } from "@/lib/preview";
 
-const publicPaths = new Set(["/", "/preview"]);
-
 export async function proxy(request: NextRequest) {
-  if (isPreviewGateEnabled() && !publicPaths.has(request.nextUrl.pathname)) {
+  if (
+    isPreviewGateEnabled() &&
+    requiresPreviewAccess(request.nextUrl.pathname)
+  ) {
     const cookie = request.cookies.get(PREVIEW_COOKIE_NAME)?.value;
     if (!(await hasValidPreviewCookie(cookie))) {
+      if (request.nextUrl.pathname.startsWith("/api/"))
+        return NextResponse.json(
+          { error: "Private preview access is required." },
+          { status: 403, headers: { "Cache-Control": "no-store" } },
+        );
       const destination = new URL("/preview", request.url);
       destination.searchParams.set(
         "next",
@@ -50,6 +57,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|auth/callback|_next|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|woff|woff2|txt|xml)$).*)",
+    "/((?!_next|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|woff|woff2|txt|xml)$).*)",
   ],
 };

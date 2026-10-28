@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   House,
   Images,
+  Mail,
   Menu,
   Package,
   RotateCcw,
@@ -24,6 +25,7 @@ const links = [
   { label: "Discounts", href: "/admin/discounts", icon: TicketPercent },
   { label: "Returns", href: "/admin/returns", icon: RotateCcw },
   { label: "Subscribers", href: "/admin/subscribers", icon: UsersRound },
+  { label: "Notifications", href: "/admin/notifications", icon: Mail },
 ];
 
 function SidebarContents({ onNavigate }: { onNavigate?: () => void }) {

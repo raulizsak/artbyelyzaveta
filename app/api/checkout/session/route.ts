@@ -84,13 +84,49 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     const input = parsed.data;
+    if (
+      paymentMode === "test" &&
+      process.env.NODE_ENV === "production" &&
+      input.email.toLowerCase() !==
+        process.env.EMAIL_TEST_RECIPIENT?.trim().toLowerCase()
+    )
+      return NextResponse.json(
+        {
+          error:
+            "Private test checkout uses the approved review inbox. Please use its email address.",
+        },
+        { status: 400 },
+      );
+    if (
+      paymentMode === "test" &&
+      process.env.NODE_ENV === "production" &&
+      !input.paintingIds.every((id) =>
+        (process.env.PRELAUNCH_TEST_PAINTING_IDS ?? "")
+          .split(",")
+          .map((value) => value.trim())
+          .includes(id),
+      )
+    )
+      return NextResponse.json(
+        {
+          error:
+            "Test payments are available for the isolated review artworks. Existing artworks remain available for browsing.",
+        },
+        { status: 400 },
+      );
+
     const { mode, stripe } = getCheckoutStripe();
     let prices: Awaited<ReturnType<typeof getCheckoutPriceIds>>;
     try {
       prices = await getCheckoutPriceIds(input.paintingIds, mode);
     } catch {
       await Promise.all(
-        input.paintingIds.map((paintingId) => syncPaintingCatalog(paintingId)),
+        input.paintingIds.map((paintingId) =>
+          syncPaintingCatalog(
+            paintingId,
+            mode === "test" ? ["test"] : ["test", "live"],
+          ),
+        ),
       );
       prices = await getCheckoutPriceIds(input.paintingIds, mode);
     }

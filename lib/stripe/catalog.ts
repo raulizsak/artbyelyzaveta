@@ -30,6 +30,7 @@ async function findProduct(
 
 export async function syncPaintingCatalog(
   paintingId: string,
+  requestedModes: StripeMode[] = modes,
 ): Promise<CatalogSyncResult[]> {
   const admin = createAdminClient();
   const [{ data: painting, error }, { data: existingRows }] = await Promise.all(
@@ -64,7 +65,7 @@ export async function syncPaintingCatalog(
     painting.published_at !== null && painting.status === "available";
 
   return Promise.all(
-    modes.map(async (mode): Promise<CatalogSyncResult> => {
+    requestedModes.map(async (mode): Promise<CatalogSyncResult> => {
       const current = existingRows?.find((row) => row.mode === mode);
       if (!getStripeSecretKey(mode)) {
         await admin.from("painting_stripe_catalog").upsert(

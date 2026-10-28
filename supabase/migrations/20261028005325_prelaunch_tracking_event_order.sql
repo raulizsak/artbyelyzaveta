@@ -5,7 +5,7 @@ declare
   original text;
   definition text;
 begin
-  original := pg_get_functiondef('private.record_tracking_result(uuid,text,jsonb,boolean,timestamptz,text,timestamptz,text,uuid)'::regprocedure);
+  original := replace(pg_get_functiondef('private.record_tracking_result(uuid,text,jsonb,boolean,timestamptz,text,timestamptz,text,uuid)'::regprocedure), E'\r\n', E'\n');
   definition := replace(original, '  v_transitioned boolean := false;', '  v_transitioned boolean := false; v_incoming_time timestamptz; v_current_time timestamptz;');
   definition := replace(definition, E'  update public.orders set\n    tracking_status =', $guard$
   if v_order.fulfillment_status = 'delivered' and not p_delivered then
