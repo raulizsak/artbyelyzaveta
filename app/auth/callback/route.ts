@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { SITE_URL } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
+import { safePreviewNext } from "@/lib/preview";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const nextParam = url.searchParams.get("next");
-  const next = nextParam?.startsWith("/") ? nextParam : "/account";
+  const next = safePreviewNext(nextParam ?? "/account");
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
