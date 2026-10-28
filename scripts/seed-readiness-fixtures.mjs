@@ -108,21 +108,19 @@ for (const fixture of journal.paintings) {
     root + "fixture-journal.json",
     JSON.stringify(journal, null, 2),
   );
-  const catalog = await sb
-    .from("painting_stripe_catalog")
-    .upsert(
-      {
-        painting_id: fixture.id,
-        mode: "test",
-        stripe_product_id: product.id,
-        stripe_price_id: price.id,
-        synced_price_cents: 12000,
-        synced_currency: "AUD",
-        sync_status: "synced",
-        last_synced_at: new Date().toISOString(),
-      },
-      { onConflict: "painting_id,mode" },
-    );
+  const catalog = await sb.from("painting_stripe_catalog").upsert(
+    {
+      painting_id: fixture.id,
+      mode: "test",
+      stripe_product_id: product.id,
+      stripe_price_id: price.id,
+      synced_price_cents: 12000,
+      synced_currency: "AUD",
+      sync_status: "synced",
+      last_synced_at: new Date().toISOString(),
+    },
+    { onConflict: "painting_id,mode" },
+  );
   if (catalog.error) throw Error("Isolated catalog insert failed");
 }
 const image = await readFile("public/brand-stripe-icon.png");
@@ -134,23 +132,21 @@ for (const fixture of journal.paintings) {
       .from("artwork-public")
       .upload(path, image, { contentType: "image/png", upsert: true });
     if (upload.error) throw Error("Isolated image upload failed");
-    const media = await sb
-      .from("painting_media")
-      .upsert(
-        {
-          painting_id: fixture.id,
-          kind: "artwork",
-          storage_path: path,
-          variant,
-          width: metadata.width,
-          height: metadata.height,
-          bytes: image.length,
-          mime_type: "image/png",
-          alt_text: "Isolated private review artwork",
-          position: 0,
-        },
-        { onConflict: "storage_path" },
-      );
+    const media = await sb.from("painting_media").upsert(
+      {
+        painting_id: fixture.id,
+        kind: "artwork",
+        storage_path: path,
+        variant,
+        width: metadata.width,
+        height: metadata.height,
+        bytes: image.length,
+        mime_type: "image/png",
+        alt_text: "Isolated private review artwork",
+        position: 0,
+      },
+      { onConflict: "storage_path" },
+    );
     if (media.error) throw Error("Isolated image metadata failed");
   }
 }
@@ -160,19 +156,17 @@ await writeFile(
   root + "fixture-journal.json",
   JSON.stringify(journal, null, 2),
 );
-const discount = await sb
-  .from("discounts")
-  .upsert(
-    {
-      id: journal.discountId,
-      code: journal.discountCode,
-      discount_type: "percentage",
-      percent_off: 10,
-      applies_to: "specific",
-      active: true,
-    },
-    { onConflict: "id" },
-  );
+const discount = await sb.from("discounts").upsert(
+  {
+    id: journal.discountId,
+    code: journal.discountCode,
+    discount_type: "percentage",
+    percent_off: 10,
+    applies_to: "specific",
+    active: true,
+  },
+  { onConflict: "id" },
+);
 if (discount.error) throw Error("Isolated discount insert failed");
 const scope = await sb.from("discount_products").upsert(
   journal.paintings.map((f) => ({
